@@ -1,3 +1,10 @@
+# Python env
+.venv/
+.venv311/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # Secrets
 .env
 *.key
@@ -11,18 +18,25 @@ data/parquet/
 harvesters/*_harvester/raw_db/
 harvesters/*_harvester/logs/
 
-# Runtime state / caches
+# Runtime artifacts / caches
+logs/
+outputs/
+models/
 data/cache_fng.json
 data/trading_state.json
-__pycache__/
-*.py[cod]
-.pytest_cache/
+btc_data/
+search_state/
 
 # Local outputs
 reports/
 research/results/
 
-# OS / editor
+# Build artifacts
+build/
+dist/
+*.spec
+
+# IDE / OS
 Desktop.ini
 Thumbs.db
 .DS_Store

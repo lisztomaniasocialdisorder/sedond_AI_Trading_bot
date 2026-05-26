@@ -1,175 +1,84 @@
-# Trading Microstructure Console
+# Sedond AI Trading Bot
 
-這個專案目前分成三條線：
+這個專案目前分成兩個核心區塊：
 
-1. **Harvester 資料蒐集**：持續抓 BTC / ADA 的 Binance futures microstructure 資料。
-2. **Dashboard / Trading Cockpit**：看資料、看訊號、接 OKX 模擬盤、記錄交易與資產。
-3. **AI Brain**：還沒開始訓練，等 harvester 跑出足夠資料後再接上。
+1. **既有 AI 交易框架**：保留原本 repo 的 `src/`、`dashboard.py`、`run.py`、OKX paper trading、回測、walk-forward、SNR、特徵工程與模型訓練工具。
+2. **新增 Microstructure + Trading Console**：新增 BTC / ADA harvester、SQLite/Parquet 資料管線、Flask dashboard、BTC/ADA split signal dashboard，以及 OKX 模擬盤交易介面。
 
-目前 AI 和 harvester 本體先不要亂動；交易介面、OKX、紀錄、風控、報表這些可以持續擴充。
+目前最重要的未完成項目是：**AI 大腦還沒完成接上**。現在已有資料蒐集、觀測、交易面板、OKX 模擬盤送單與資料轉檔工具，下一步會是把長期收集到的 microstructure 資料訓練成真正的交易決策模型。
 
----
-
-## 資料夾結構
+## 快速入口
 
 ```text
 C:\Users\brian\trading
-├─ .env                         # OKX API key 與本機設定，不要公開
-├─ .env.example                 # env 範本
-├─ README.md                    # 本文件
-│
-├─ configs                      # 之後放策略 / 風控 / 模型設定
-│
-├─ dashboards
-│  ├─ server.py                 # Flask API server，port 5000
-│  ├─ okx_client.py             # OKX v5 REST API 串接
-│  ├─ index.html                # 原始 microstructure 觀測 dashboard
-│  ├─ split.html                # BTC / ADA signal split 頁
-│  ├─ start_dashboard.bat       # dashboard 啟動腳本
-│  ├─ control
-│  │  └─ signal_dashboard.html  # 單一幣種 signal dashboard
-│  └─ trading
-│     └─ trading.html           # OKX 模擬盤交易介面
-│
-├─ harvesters
-│  ├─ binance_futures_harvester.py  # BTC / ADA 共用 harvester 核心
-│  ├─ btc_harvester.py              # BTC 啟動器
-│  ├─ ada_harvester.py              # ADA 啟動器
-│  ├─ start_harvesters.bat          # 同時啟動 BTC / ADA harvester
-│  ├─ db_to_parquet.py              # SQLite DB 轉 Parquet
-│  ├─ csv_to_parquet.py             # CSV 轉 Parquet
-│  ├─ BTC_harvester
-│  │  ├─ raw_db
-│  │  │  └─ microstructure_BTC.db
-│  │  └─ logs
-│  └─ ADA_harvester
-│     ├─ raw_db
-│     │  └─ microstructure_ADA.db
-│     └─ logs
-│
-├─ data
-│  ├─ cache_fng.json            # 真實歷史 Fear & Greed 快取
-│  ├─ trading_state.json        # 交易介面狀態、交易紀錄、每日資產日結
-│  ├─ events
-│  ├─ features
-│  └─ parquet
-│
-├─ research                     # 未來 AI brain / 回測 / walk-forward 研究用
-│
-├─ reports                      # 未來報表輸出
-│
-└─ src                          # 未來正式共用模組
 ```
 
----
+常用頁面：
 
-## 快速啟動
+```text
+http://localhost:5000/                       原始 microstructure dashboard
+http://localhost:5000/signal_dashboard.html   Signal dashboard
+http://localhost:5000/split.html              BTC / ADA split dashboard
+http://localhost:5000/trading.html            OKX 模擬盤交易介面
+```
 
-桌面目前有兩個 bat：
+桌面捷徑：
 
 ```text
 C:\Users\brian\OneDrive\桌面\open_dashboard.bat
 C:\Users\brian\OneDrive\桌面\open_trading.bat
 ```
 
-用途：
+## 資料夾結構
 
 ```text
-open_dashboard.bat  →  http://localhost:5000/signal_dashboard.html
-open_trading.bat    →  http://localhost:5000/trading.html
+C:\Users\brian\trading
+├─ .env                         # OKX API key 與本機設定，不會進 git
+├─ README.md
+├─ .gitignore
+├─ dashboard.py                  # 原 repo 的 Streamlit AI dashboard
+├─ run.py                        # 原 repo 的訓練 / 更新流程入口
+├─ okx_paper_trade.py            # 原 repo 的 OKX paper trading 入口
+├─ src                           # AI、回測、特徵、SNR、OKX、pipeline 核心模組
+├─ dashboards
+│  ├─ server.py                  # Flask API server，port 5000
+│  ├─ okx_client.py              # OKX v5 REST client
+│  ├─ index.html                 # 原始 microstructure dashboard
+│  ├─ split.html                 # BTC / ADA split dashboard
+│  ├─ control
+│  │  └─ signal_dashboard.html   # Signal dashboard
+│  └─ trading
+│     └─ trading.html            # 中文 OKX 模擬盤交易介面
+├─ harvesters
+│  ├─ binance_futures_harvester.py
+│  ├─ btc_harvester.py
+│  ├─ ada_harvester.py
+│  ├─ start_harvesters.bat
+│  ├─ db_to_parquet.py           # SQLite DB 轉 Parquet
+│  └─ csv_to_parquet.py          # CSV 轉 Parquet
+├─ data
+│  ├─ parquet                    # 轉出的 Parquet，不進 git
+│  ├─ cache_fng.json             # Fear & Greed cache，不進 git
+│  └─ trading_state.json         # 交易介面狀態，不進 git
+├─ configs
+├─ research
+└─ reports
 ```
-
-它們會先檢查 `localhost:5000` 是否已經在跑；如果沒有，會自動啟動：
-
-```text
-C:\Users\brian\trading\dashboards\server.py
-```
-
----
-
-## 頁面說明
-
-### 1. 原始觀測 Dashboard
-
-```text
-http://localhost:5000/
-```
-
-用途：
-
-- 看 BTC / ADA 的 order book
-- 看 DB 寫入筆數
-- 看 L1 / L20 / trades / depth metrics
-- 適合 debug harvester
-
-### 2. Signal Dashboard
-
-```text
-http://localhost:5000/signal_dashboard.html
-```
-
-用途：
-
-- 看單一幣種 signal 狀態
-- 可切換 BTC / ADA
-- 看 OBI、spread、depth、buy pressure
-- AI Brain slot 目前是 standby
-
-也支援固定幣種：
-
-```text
-http://localhost:5000/signal_dashboard.html?symbol=BTCUSDT
-http://localhost:5000/signal_dashboard.html?symbol=ADAUSDT
-```
-
-### 3. BTC / ADA Split
-
-```text
-http://localhost:5000/split.html
-```
-
-用途：
-
-- 左邊 BTCUSDT
-- 右邊 ADAUSDT
-- 兩邊各自刷新
-- 適合平常當主控台看
-
-### 4. Trading Panel
-
-```text
-http://localhost:5000/trading.html
-```
-
-用途：
-
-- OKX 模擬盤真送單
-- 顯示帳戶總資產與 USDT 可用資金
-- 設定 AI 可用資金上限
-- Kline / MACD / RSI / ATR
-- 歷史 Fear & Greed
-- 總資產每日結算折線圖
-- 交易紀錄
-- OKX 持倉
-- 未成交委託
-- 撤單 / 平倉
-
----
 
 ## OKX 模擬盤設定
 
-設定檔：
+請把 OKX 模擬盤 key 放在：
 
 ```text
 C:\Users\brian\trading\.env
 ```
 
-必要欄位：
+需要的欄位：
 
 ```env
-OKX_API_KEY=你的 API Key
-OKX_API_SECRET=你的 Secret Key
-OKX_API_PASSPHRASE=你的 Passphrase
+OKX_API_KEY=your_api_key
+OKX_API_SECRET=your_secret
+OKX_API_PASSPHRASE=your_passphrase
 OKX_DEMO=1
 OKX_ENABLE_LIVE_TRADING=1
 OKX_ALLOW_REAL_ENV_TRADING=0
@@ -179,21 +88,48 @@ OKX_BASE_URL=https://www.okx.com
 說明：
 
 - `OKX_DEMO=1`：使用 OKX 模擬盤 header。
-- `OKX_ENABLE_LIVE_TRADING=1`：允許真的送到 OKX 模擬盤。
-- `OKX_ALLOW_REAL_ENV_TRADING=0`：正式環境保險絲，正常保持 0。
+- `OKX_ENABLE_LIVE_TRADING=1`：允許交易介面真的送單到模擬盤。
+- `OKX_ALLOW_REAL_ENV_TRADING=0`：避免誤打到真實盤。
 
-目前交易介面已確認可讀到模擬盤資產，並顯示「模擬盤真送單」。
+`.env` 已被 `.gitignore` 排除，不會推到 GitHub。
 
----
+## Dashboard Server
+
+啟動 dashboard server：
+
+```powershell
+cd C:\Users\brian\trading\dashboards
+python server.py
+```
+
+如果 port 5000 被佔用，可先關掉舊程序再啟動。
+
+## Harvester
+
+BTC / ADA harvester 會把 Binance futures microstructure 資料寫進 SQLite DB。
+
+常用入口：
+
+```text
+C:\Users\brian\trading\harvesters\start_harvesters.bat
+```
+
+DB 位置：
+
+```text
+C:\Users\brian\trading\harvesters\BTC_harvester\raw_db\microstructure_BTC.db
+C:\Users\brian\trading\harvesters\ADA_harvester\raw_db\microstructure_ADA.db
+```
+
+DB、WAL、log 都已被 `.gitignore` 排除。
 
 ## DB / CSV 轉 Parquet
 
-Harvester 正在跑時會邊寫 SQLite DB，也會邊寫 Parquet。  
-如果要補轉舊資料、重建 Parquet，使用 `db_to_parquet.py`。
+Harvester 目前主要產出是 SQLite DB，所以通常使用 `db_to_parquet.py`。
 
-### DB to Parquet
+DB to Parquet：
 
-```bat
+```powershell
 cd C:\Users\brian\trading
 python harvesters\db_to_parquet.py --symbol BTC
 python harvesters\db_to_parquet.py --symbol ADA
@@ -201,105 +137,60 @@ python harvesters\db_to_parquet.py --symbol ADA
 
 只轉單一 table：
 
-```bat
+```powershell
 python harvesters\db_to_parquet.py --symbol BTC --table trades
 python harvesters\db_to_parquet.py --symbol ADA --table orderbook_l1
 ```
 
-先看 row count，不寫檔：
+只檢查筆數、不輸出：
 
-```bat
+```powershell
 python harvesters\db_to_parquet.py --symbol BTC --table trades --dry-run
 ```
 
-輸出位置：
+CSV to Parquet：
 
-```text
-data\parquet\BTC\<table>\date=YYYY-MM-DD\part-db-*.parquet
-data\parquet\ADA\<table>\date=YYYY-MM-DD\part-db-*.parquet
-```
-
-### CSV to Parquet
-
-如果手上已經有 CSV 才使用：
-
-```bat
+```powershell
 python harvesters\csv_to_parquet.py --input exports\trades.csv --symbol BTC --table trades
-python harvesters\csv_to_parquet.py --input exports\ADA --symbol ADA --table orderbook_l1
 ```
 
 輸出位置：
 
 ```text
-data\parquet\<COIN>\<table>\date=YYYY-MM-DD\part-csv-*.parquet
+data\parquet\<COIN>\<table>\date=YYYY-MM-DD\part-*.parquet
 ```
-
----
 
 ## 已完成
 
-- 專案搬到 `C:\Users\brian\trading`
-- BTC / ADA harvester 可獨立啟動
-- Dashboard server 整合 Flask API
-- 原始 microstructure dashboard
-- signal dashboard
-- BTC / ADA split dashboard
-- trading panel
-- OKX 模擬盤 API 串接
-- OKX 帳戶餘額顯示
-- AI 可用資金上限欄位
-- 模擬盤送單
-- 交易紀錄
-- 每日總資產日結折線圖
-- trading state server 端保存
-- 持倉顯示
-- 未成交委託顯示
-- 撤單 / 平倉 API 與 UI
-- 歷史 Fear & Greed 真實日資料
-- Kline / MACD / RSI / ATR 技術圖
-- 技術圖同步縮放，Fear & Greed 獨立縮放
-- DB to Parquet 工具
-- CSV to Parquet 工具
+- BTC / ADA harvester 可重開。
+- ADA harvester 支援 Ctrl+C 後先 flush queue 再停機。
+- 原始 microstructure dashboard。
+- Signal dashboard。
+- BTC / ADA split dashboard。
+- 中文 OKX 模擬盤交易介面。
+- OKX 模擬盤餘額、下單、撤單、平倉 API。
+- Kline / MACD / RSI / ATR 圖表。
+- Fear & Greed 歷史資料。
+- 交易紀錄與每日總資產折線圖。
+- 交易介面狀態保存，下次打開會沿用。
+- SQLite DB to Parquet。
+- CSV to Parquet。
 
----
+## 待完成
 
-## 尚未完成
+- AI 大腦。
+- 使用長期 harvester 資料建立 feature pipeline。
+- target labeling。
+- 模型訓練與 walk-forward 驗證。
+- 把 AI 大腦輸出的 signal 接回 trading panel。
+- 更完整的風控與自動交易策略。
 
-- AI Brain 訓練
-- AI Brain 接上 trading panel
-- 正式 feature engineering pipeline
-- target labeling
-- walk-forward 驗證
-- 回測報表頁
-- 單筆風控上限
-- 每日虧損上限
-- 連續虧損暫停
-- 黑天鵝暫停交易規則
-- 更完整的 OKX 歷史成交同步
-
----
-
-## 目前系統定位
-
-目前系統已經有：
+## 目前狀態
 
 ```text
-眼睛：harvester + dashboards
-手：OKX 模擬盤送單
-記憶：交易紀錄 + 每日資產日結
-駕駛艙：signal dashboard / split dashboard / trading panel
-```
-
-但真正的 AI Brain 還沒有訓練出來。
-
-等 harvester 跑出足夠長的資料後，下一階段才是：
-
-```text
-資料整理
-→ 特徵工程
-→ 標籤設計
-→ 模型訓練
-→ walk-forward
-→ 模擬盤驗證
-→ 接上 trading panel
+資料收集：完成基礎版
+Dashboard：完成基礎版
+OKX 模擬盤交易：完成基礎版
+Parquet 資料管線：完成基礎版
+AI 大腦：尚未完成
 ```
