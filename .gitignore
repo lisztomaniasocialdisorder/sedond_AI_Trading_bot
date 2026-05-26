@@ -1,0 +1,30 @@
+# Secrets
+.env
+*.key
+*.pem
+
+# Large harvester data
+*.db
+*.db-wal
+*.db-shm
+data/parquet/
+harvesters/*_harvester/raw_db/
+harvesters/*_harvester/logs/
+
+# Runtime state / caches
+data/cache_fng.json
+data/trading_state.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local outputs
+reports/
+research/results/
+
+# OS / editor
+Desktop.ini
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

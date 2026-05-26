@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #080b10;
+      --panel: #111821;
+      --panel-2: #151f2b;
+      --line: #263342;
+      --text: #edf2f7;
+      --muted: #90a3b8;
+      --green: #20d18f;
+      --red: #ff5f7a;
+      --amber: #ffb020;
+      --blue: #4fb4ff;
+      --violet: #b68cff;
+      --cyan: #43d9d2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      width: min(1760px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 18px 0 28px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 54px);
+      line-height: 1;
+      font-weight: 850;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 220px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      background: #0d131b;
+      border-radius: 8px;
+    }
+
+    .segmented button,
+    .refresh button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .segmented button.active {
+      background: var(--panel-2);
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px #34465a;
+    }
+
+    .refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0d131b;
+    }
+
+    .refresh button {
+      width: 46px;
+      color: var(--cyan);
+    }
+
+    .refresh select {
+      height: 42px;
+      min-width: 110px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 800;
+      outline: 0;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--amber);
+      box-shadow: 0 0 18px rgba(255, 176, 32, .65);
+    }
+
+    .status-dot.live {
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(32, 209, 143, .65);
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1.3fr repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      min-width: 0;
+    }
+
+    .metric {
+      padding: 16px;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.1;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .value {
+      margin-top: 10px;
+      font-size: clamp(25px, 2.2vw, 42px);
+      line-height: 1;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .subvalue {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .warn { color: var(--amber); }
+    .blue { color: var(--blue); }
+    .violet { color: var(--violet); }
+    .cyan { color: var(--cyan); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 1.1fr) minmax(520px, 2fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 52px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      background: #0d131b;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .gauge-wrap {
+      padding: 10px;
+      min-height: 302px;
+    }
+
+    #obiGauge {
+      width: 100%;
+      height: 278px;
+    }
+
+    .book {
+      padding: 0 14px 14px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(38, 51, 66, .72);
+      text-align: right;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    td:first-child,
+    th:first-child { text-align: left; }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .chart {
+      min-height: 312px;
+      padding: 8px;
+    }
+
+    .wide-panel {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .list {
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .row strong {
+      color: var(--text);
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 14px;
+      text-align: right;
+    }
+
+    @media (max-width: 1200px) {
+      .top-grid { grid-template-columns: repeat(3, 1fr); }
+      .main-grid { grid-template-columns: 1fr; }
+      .wide-panel { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .shell { width: min(100vw - 18px, 1760px); padding-top: 10px; }
+      header { grid-template-columns: 1fr; }
+      .toolbar { justify-content: stretch; }
+      .segmented, .refresh { width: 100%; }
+      .top-grid { grid-template-columns: 1fr; }
+      .chart-grid { grid-template-columns: 1fr; }
+      .metric { min-height: 96px; }
+    }
+
+    body.embed .shell {
+      width: 100%;
+      padding: 10px;
+    }
+
+    body.embed header {
+      grid-template-columns: 1fr;
+      padding: 6px 0 10px;
+    }
+
+    body.embed .toolbar,
+    body.embed .footer-note {
+      display: none;
+    }
+
+    body.embed h1 {
+      font-size: clamp(24px, 3vw, 42px);
+    }
+
+    body.embed .top-grid,
+    body.embed .chart-grid,
+    body.embed .main-grid {
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Signal Dashboard</h1>
+        <div class="subtitle">A separate control view for OBI, spread, depth, flow, and AI-readiness.</div>
+      </div>
+      <div class="toolbar">
+        <span id="statusDot" class="status-dot"></span>
+        <div class="segmented" aria-label="Symbol selector">
+          <button id="btnBTC" class="active" type="button">BTC</button>
+          <button id="btnADA" type="button">ADA</button>
+        </div>
+        <div class="refresh">
+          <button id="refreshNow" type="button" title="Refresh">↻</button>
+          <select id="refreshMs" aria-label="Refresh interval">
+            <option value="500">0.5s</option>
+            <option value="1000" selected>1s</option>
+            <option value="2000">2s</option>
+            <option value="5000">5s</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <section class="top-grid">
+      <div class="panel metric">
+        <div class="label">Last Price</div>
+        <div id="price" class="value">-</div>
+        <div id="bidAsk" class="subvalue">Bid - / Ask -</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">OBI</div>
+        <div id="obi" class="value cyan">-</div>
+        <div id="obiState" class="subvalue">Neutral</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">Spread</div>
+        <div id="spread" class="value blue">-</div>
+        <div class="subvalue">basis points</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">Depth Imbalance</div>
+        <div id="imbalance" class="value violet">-</div>
+        <div class="subvalue">L20 book</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">Buy Pressure</div>
+        <div id="buyPressure" class="value good">-</div>
+        <div class="subvalue">last 60 seconds</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">DB Rows</div>
+        <div id="dbRows" class="value warn">-</div>
+        <div id="dbSize" class="subvalue">- MB</div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <div class="panel">
+        <div class="section-head">
+          <div class="section-title">OBI Gauge</div>
+          <div id="updatedAt" class="pill">waiting</div>
+        </div>
+        <div class="gauge-wrap">
+          <div id="obiGauge"></div>
+        </div>
+        <div class="section-head">
+          <div class="section-title">Order Book L5</div>
+          <div id="bookMid" class="pill">mid -</div>
+        </div>
+        <div class="book">
+          <table>
+            <thead>
+              <tr>
+                <th>Lvl</th>
+                <th>Bid</th>
+                <th>Bid Qty</th>
+                <th>Ask</th>
+                <th>Ask Qty</th>
+              </tr>
+            </thead>
+            <tbody id="bookRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="panel chart" id="priceChart"></div>
+        <div class="panel chart" id="obiChart"></div>
+        <div class="panel chart" id="depthChart"></div>
+        <div class="panel chart" id="spreadChart"></div>
+      </div>
+    </section>
+
+    <section class="wide-panel">
+      <div class="panel">
+        <div class="section-head">
+          <div class="section-title">Flow</div>
+          <div class="pill">1 minute</div>
+        </div>
+        <div class="list">
+          <div class="row"><span>Trades</span><strong id="trades1m">-</strong></div>
+          <div class="row"><span>Volume</span><strong id="volume1m">-</strong></div>
+          <div class="row"><span>High</span><strong id="high1m">-</strong></div>
+          <div class="row"><span>Low</span><strong id="low1m">-</strong></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="section-head">
+          <div class="section-title">Data Readiness</div>
+          <div class="pill">SQLite</div>
+        </div>
+        <div class="list" id="countsList"></div>
+      </div>
+      <div class="panel">
+        <div class="section-head">
+          <div class="section-title">AI Brain Slot</div>
+          <div class="pill">standby</div>
+        </div>
+        <div class="list">
+          <div class="row"><span>Feature stream</span><strong id="featureState">ready</strong></div>
+          <div class="row"><span>Model signal</span><strong>not attached</strong></div>
+          <div class="row"><span>Trading mode</span><strong>paper first</strong></div>
+          <div class="row"><span>Live order lock</span><strong class="warn">enabled</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note">Independent page: /signal_dashboard.html</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const initialSymbol = params.get("symbol") === "ADAUSDT" ? "ADAUSDT" : "BTCUSDT";
+    if (params.get("embed") === "1") document.body.classList.add("embed");
+    const state = { symbol: initialSymbol, timer: null, lastOk: false };
+    const $ = (id) => document.getElementById(id);
+
+    function fmt(n, digits = 2) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "-";
+      return Number(n).toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function compact(n) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "-";
+      const abs = Math.abs(Number(n));
+      if (abs >= 1e8) return fmt(Number(n) / 1e8, 2) + "e";
+      if (abs >= 1e6) return fmt(Number(n) / 1e6, 2) + "M";
+      if (abs >= 1e4) return fmt(Number(n) / 1e4, 2) + "w";
+      return Number(n).toLocaleString();
+    }
+
+    function pct(n, digits = 1) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "-";
+      return fmt(Number(n) * 100, digits) + "%";
+    }
+
+    function ts(ms) {
+      if (!ms) return "";
+      const value = Number(ms) > 1e12 ? Number(ms) : Number(ms) * 1000;
+      return new Date(value).toLocaleTimeString();
+    }
+
+    function priceDigits() {
+      return state.symbol.startsWith("ADA") ? 4 : 2;
+    }
+
+    function gaugeLabel(v) {
+      const x = Number(v) * 100;
+      if (x <= -60) return "Extreme Ask";
+      if (x <= -20) return "Ask Heavy";
+      if (x < 20) return "Neutral";
+      if (x < 60) return "Bid Heavy";
+      return "Extreme Bid";
+    }
+
+    function gaugeColor(v) {
+      const x = Number(v) * 100;
+      if (x <= -20) return "#ff5f7a";
+      if (x < 20) return "#ffb020";
+      return "#20d18f";
+    }
+
+    function layout(title, ytitle) {
+      return {
+        title: { text: title, font: { color: "#edf2f7", size: 14 } },
+        paper_bgcolor: "#111821",
+        plot_bgcolor: "#111821",
+        font: { color: "#edf2f7" },
+        margin: { l: 54, r: 18, t: 42, b: 38 },
+        xaxis: { gridcolor: "#263342", zerolinecolor: "#263342" },
+        yaxis: { title: ytitle, gridcolor: "#263342", zerolinecolor: "#263342" },
+        transition: { duration: 280, easing: "cubic-in-out" }
+      };
+    }
+
+    const plotConfig = { responsive: true, displayModeBar: false };
+
+    function updateGauge(obi) {
+      const value = Number(obi || 0) * 100;
+      const color = gaugeColor(obi || 0);
+      Plotly.react("obiGauge", [{
+        type: "indicator",
+        mode: "gauge+number",
+        value,
+        title: { text: gaugeLabel(obi || 0), font: { size: 18, color: "#edf2f7" } },
+        number: { suffix: "%", font: { size: 34, color } },
+        gauge: {
+          axis: { range: [-100, 100], tickcolor: "#90a3b8" },
+          bar: { color, thickness: .38 },
+          bgcolor: "#111821",
+          bordercolor: "#263342",
+          steps: [
+            { range: [-100, -60], color: "#3b0d16" },
+            { range: [-60, -20], color: "#551927" },
+            { range: [-20, 20], color: "#4a3710" },
+            { range: [20, 60], color: "#103e32" },
+            { range: [60, 100], color: "#0b4b35" }
+          ],
+          threshold: { line: { color: "#edf2f7", width: 4 }, thickness: .75, value }
+        }
+      }], {
+        paper_bgcolor: "#111821",
+        plot_bgcolor: "#111821",
+        font: { color: "#edf2f7" },
+        margin: { t: 45, b: 10, l: 20, r: 20 }
+      }, plotConfig);
+    }
+
+    function drawCharts(data) {
+      const digits = priceDigits();
+      const trades = data.series.trades || [];
+      const l1 = data.series.l1 || [];
+      const metrics = data.series.metrics || [];
+
+      Plotly.react("priceChart", [{
+        x: trades.map((r) => ts(r.ts)),
+        y: trades.map((r) => r.price),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#4fb4ff", width: 2 },
+        name: "Price"
+      }], layout("Trade Price", "Price"), plotConfig);
+
+      Plotly.react("obiChart", [{
+        x: l1.map((r) => ts(r.ts)),
+        y: l1.map((r) => r.obi),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#43d9d2", width: 2 },
+        name: "OBI"
+      }], {
+        ...layout("Order Book Imbalance", "OBI"),
+        shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0, line: { color: "#90a3b8", width: 1, dash: "dash" } }]
+      }, plotConfig);
+
+      Plotly.react("depthChart", [
+        {
+          x: metrics.map((r) => ts(r.ts)),
+          y: metrics.map((r) => r.total_bid_qty),
+          type: "scatter",
+          mode: "lines",
+          line: { color: "#20d18f", width: 2 },
+          name: "Bid"
+        },
+        {
+          x: metrics.map((r) => ts(r.ts)),
+          y: metrics.map((r) => r.total_ask_qty),
+          type: "scatter",
+          mode: "lines",
+          line: { color: "#ff5f7a", width: 2 },
+          name: "Ask"
+        }
+      ], layout("L20 Depth", "Qty"), plotConfig);
+
+      Plotly.react("spreadChart", [{
+        x: l1.map((r) => ts(r.ts)),
+        y: l1.map((r) => r.spread_bps),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#b68cff", width: 2 },
+        name: "Spread bps"
+      }], layout("Spread", "bps"), plotConfig);
+
+      $("featureState").textContent = `${l1.length} L1 / ${metrics.length} depth`;
+      $("price").style.fontSize = digits === 4 ? "clamp(25px, 2.1vw, 38px)" : "";
+    }
+
+    function updateBook(data) {
+      const digits = priceDigits();
+      const rows = data.book || [];
+      $("bookRows").innerHTML = rows.map((r) => `
+        <tr>
+          <td>${r.level}</td>
+          <td class="good">${fmt(r.bid_price, digits)}</td>
+          <td>${fmt(r.bid_qty, digits === 4 ? 0 : 3)}</td>
+          <td class="bad">${fmt(r.ask_price, digits)}</td>
+          <td>${fmt(r.ask_qty, digits === 4 ? 0 : 3)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function updateCounts(data) {
+      const counts = data.counts || {};
+      const items = [
+        ["Trades", counts.trades],
+        ["Agg Trades", counts.agg_trades],
+        ["L1 Rows", counts.orderbook_l1],
+        ["L5 Rows", counts.orderbook_l5],
+        ["L20 Rows", counts.orderbook_l20],
+        ["Metrics", counts.orderbook_metrics]
+      ];
+      $("countsList").innerHTML = items.map(([label, value]) =>
+        `<div class="row"><span>${label}</span><strong>${compact(value)}</strong></div>`
+      ).join("");
+    }
+
+    function render(data) {
+      const latest = data.latest || {};
+      const stats = data.stats || {};
+      const digits = priceDigits();
+      const ok = Boolean(data.ok);
+      $("statusDot").classList.toggle("live", ok);
+      $("updatedAt").textContent = ok ? new Date().toLocaleTimeString() : (data.error || "error");
+
+      $("price").textContent = fmt(latest.price, digits);
+      $("bidAsk").textContent = `Bid ${fmt(latest.best_bid, digits)} / Ask ${fmt(latest.best_ask, digits)}`;
+      $("obi").textContent = pct(latest.obi, 2);
+      $("obiState").textContent = gaugeLabel(latest.obi || 0);
+      $("spread").textContent = fmt(latest.spread_bps, 3);
+      $("imbalance").textContent = pct(latest.depth_imbalance, 2);
+      $("buyPressure").textContent = pct(latest.buy_pressure, 1);
+      $("dbRows").textContent = compact(data.total_rows);
+      $("dbSize").textContent = `${fmt(data.db_size_mb, 1)} MB`;
+      $("bookMid").textContent = `mid ${fmt(latest.price, digits)}`;
+
+      $("trades1m").textContent = compact(stats.trades_1m);
+      $("volume1m").textContent = fmt(stats.volume_1m, digits === 4 ? 0 : 3);
+      $("high1m").textContent = fmt(stats.high_1m, digits);
+      $("low1m").textContent = fmt(stats.low_1m, digits);
+
+      updateGauge(latest.obi || 0);
+      updateBook(data);
+      updateCounts(data);
+      drawCharts(data);
+    }
+
+    async function load() {
+      try {
+        const res = await fetch(`/api/signal/${state.symbol}`);
+        const data = await res.json();
+        render(data);
+      } catch (err) {
+        $("statusDot").classList.remove("live");
+        $("updatedAt").textContent = String(err);
+      }
+    }
+
+    function restartTimer() {
+      if (state.timer) clearInterval(state.timer);
+      load();
+      state.timer = setInterval(load, Number($("refreshMs").value));
+    }
+
+    function setSymbol(symbol) {
+      state.symbol = symbol;
+      $("btnBTC").classList.toggle("active", symbol === "BTCUSDT");
+      $("btnADA").classList.toggle("active", symbol === "ADAUSDT");
+      restartTimer();
+    }
+
+    $("btnBTC").addEventListener("click", () => setSymbol("BTCUSDT"));
+    $("btnADA").addEventListener("click", () => setSymbol("ADAUSDT"));
+    $("refreshNow").addEventListener("click", load);
+    $("refreshMs").addEventListener("change", restartTimer);
+
+    $("btnBTC").classList.toggle("active", state.symbol === "BTCUSDT");
+    $("btnADA").classList.toggle("active", state.symbol === "ADAUSDT");
+    restartTimer();
+  </script>
+</body>
+</html>

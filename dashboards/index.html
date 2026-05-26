@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futures Microstructure Console</title>
+  <meta name="description" content="Live Binance USD-M futures microstructure dashboard" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg: #090d12;
+      --surface: #10161f;
+      --surface-2: #151d28;
+      --surface-3: #1b2634;
+      --border: #263241;
+      --border-soft: rgba(255, 255, 255, 0.07);
+      --text: #e8edf3;
+      --muted: #8c9bab;
+      --soft: #b6c2cf;
+      --green: #20d48b;
+      --red: #ff5f73;
+      --amber: #f2b84b;
+      --blue: #48a6ff;
+      --cyan: #39d5d8;
+      --btc: #f59a23;
+      --ada: #3ca4ff;
+      --mono: "JetBrains Mono", Consolas, monospace;
+      --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius: 8px;
+      --header-h: 56px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.4;
+      overflow: hidden;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--soft);
+      border-radius: 7px;
+      height: 32px;
+      padding: 0 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover { border-color: #3d4b5d; color: var(--text); }
+    button.active { background: #213044; color: #ffffff; border-color: #52647a; }
+
+    #app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: var(--header-h) 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: #0b1017;
+      min-width: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 360px;
+      flex: 1 1 auto;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .brand-sub {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .market-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-width: 0;
+      margin-left: auto;
+      justify-content: flex-end;
+      order: 4;
+    }
+    .market-chip {
+      display: grid;
+      grid-template-columns: auto auto auto;
+      align-items: center;
+      gap: 8px;
+      min-width: 190px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--radius);
+      transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+    }
+    .market-chip:hover { transform: translateY(-1px); }
+    .market-chip strong { font-family: var(--mono); font-size: 12px; }
+    .market-chip strong { font-size: 14px; }
+    .market-chip .price { font-family: var(--mono); color: var(--text); }
+    .market-chip .price { font-size: 14px; }
+    .market-chip .delta { font-family: var(--mono); font-size: 11px; }
+    .market-chip .delta { font-size: 13px; }
+    .market-chip.btc { border-left: 3px solid var(--btc); }
+    .market-chip.ada { border-left: 3px solid var(--ada); }
+    .spacer { flex: 1; }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      order: 2;
+    }
+    .clock {
+      font-family: var(--mono);
+      color: var(--soft);
+      min-width: 84px;
+      font-size: 14px;
+      text-align: right;
+      order: 3;
+    }
+
+    .content {
+      min-height: 0;
+      overflow: hidden;
+    }
+    .markets {
+      position: relative;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--border);
+    }
+    .markets.single { grid-template-columns: minmax(0, 1fr); }
+    .markets.single .market.hidden { display: none; }
+
+    .market {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(260px, 42vh) auto 1fr;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .market-head {
+      display: grid;
+      grid-template-columns: minmax(210px, 0.86fr) minmax(250px, 1.14fr);
+      gap: 16px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--surface);
+    }
+    .market.btc .market-head {
+      grid-template-columns: minmax(210px, 0.58fr) minmax(250px, 1.42fr);
+    }
+    .market.btc .market-meta {
+      justify-self: start;
+      width: min(560px, 100%);
+    }
+    .market.ada .market-head {
+      grid-template-columns: minmax(260px, 1.38fr) minmax(250px, 0.62fr);
+    }
+    .market.ada .market-head > div:first-child {
+      padding-left: 140px;
+    }
+    .market.ada .market-meta {
+      justify-self: end;
+      width: min(560px, 100%);
+    }
+    .db-total-center {
+      position: absolute;
+      top: 13px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      min-width: 190px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(10, 16, 23, 0.92);
+      backdrop-filter: blur(10px);
+      color: var(--soft);
+      text-align: center;
+      font-family: var(--mono);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+      pointer-events: none;
+    }
+    .db-total-center span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .db-total-center strong {
+      display: block;
+      color: var(--text);
+      font-size: 15px;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .symbol {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 21px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+    .dot.live { background: var(--green); box-shadow: 0 0 0 3px rgba(32, 212, 139, 0.14); }
+    .dot.live { animation: livePulse 1.7s ease-in-out infinite; }
+    .dot.stale { background: var(--amber); box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.13); }
+    .price-line {
+      display: flex;
+      align-items: end;
+      gap: 12px;
+      min-width: 0;
+    }
+    .big-price {
+      font-family: var(--mono);
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: 0;
+      line-height: 1;
+      color: var(--text);
+      transition: color 160ms ease, transform 160ms ease, text-shadow 220ms ease;
+      will-change: transform, color;
+    }
+    .session-change {
+      font-family: var(--mono);
+      font-size: 15px;
+      padding-bottom: 3px;
+    }
+    .market-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      align-content: center;
+    }
+    .metric {
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--border-soft);
+      background: rgba(255, 255, 255, 0.025);
+      border-radius: var(--radius);
+      transition: background-color 180ms ease, border-color 180ms ease;
+    }
+    .metric.live-change { background: rgba(255, 255, 255, 0.055); border-color: rgba(255, 255, 255, 0.14); }
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+    .metric .value {
+      font-family: var(--mono);
+      color: var(--text);
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chart-zone {
+      position: relative;
+      min-height: 0;
+      background: #080c12;
+      border-bottom: 1px solid var(--border-soft);
+      animation: panelIn 360ms ease both;
+    }
+    .chart {
+      position: absolute;
+      inset: 0;
+    }
+    .chart-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      pointer-events: none;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--border-soft);
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .flow-cell {
+      min-width: 0;
+      padding: 11px 14px;
+      background: var(--surface);
+    }
+    .flow-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .flow-value {
+      font-family: var(--mono);
+      font-size: 17px;
+      color: var(--text);
+      transition: color 180ms ease, transform 180ms ease;
+    }
+    .bar-track {
+      height: 6px;
+      margin-top: 8px;
+      border-radius: 999px;
+      background: #2a1720;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 50%;
+      background: var(--green);
+      transition: width 360ms cubic-bezier(.2, .9, .25, 1), background-color 220ms ease;
+    }
+
+    .lower-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(250px, 0.95fr) minmax(280px, 1.05fr);
+      gap: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+    .section {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 38px 1fr;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--soft);
+      font-weight: 600;
+    }
+    .section-note {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .book-wrap {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(250px, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .book {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      overflow: hidden;
+      padding: 10px 10px 12px;
+      gap: 8px;
+    }
+    .book-head, .book-row {
+      display: grid;
+      grid-template-columns: 40px minmax(90px, 1fr) minmax(80px, 0.9fr);
+      align-items: center;
+      gap: 8px;
+      min-height: 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .book-head {
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .book-row {
+      position: relative;
+      color: var(--soft);
+      border-radius: 5px;
+      overflow: hidden;
+      animation: rowSettle 210ms ease both;
+    }
+    .book-row > span {
+      position: relative;
+      z-index: 1;
+      padding: 4px 6px;
+      white-space: nowrap;
+    }
+    .book-bg {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      opacity: 0.18;
+      transform-origin: right center;
+      animation: depthGrow 260ms cubic-bezier(.2, .9, .25, 1) both;
+    }
+    .ask .book-bg { background: var(--red); }
+    .bid .book-bg { background: var(--green); }
+    .ask .price-col { color: var(--red); }
+    .bid .price-col { color: var(--green); }
+    .midline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 8px;
+      border: 1px solid var(--border-soft);
+      background: #0d141d;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    .activity {
+      min-height: 0;
+      display: block;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .tape, .health {
+      min-height: 0;
+      overflow: auto;
+      background: var(--surface);
+    }
+    .tape-row {
+      display: grid;
+      grid-template-columns: 74px minmax(85px, 1fr) minmax(72px, 0.8fr);
+      gap: 8px;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+      font-family: var(--mono);
+      font-size: 13px;
+      animation: tradeIn 260ms cubic-bezier(.2, .9, .25, 1) both;
+      will-change: transform, opacity;
+    }
+    .tape-row.buy { color: var(--green); }
+    .tape-row.sell { color: var(--red); }
+    .tape-empty {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .health {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 8px 10px 10px;
+      gap: 6px;
+      align-content: start;
+      border-top: 1px solid var(--border-soft);
+    }
+    .health-item {
+      min-width: 0;
+      border: 1px solid var(--border-soft);
+      background: rgba(255, 255, 255, 0.025);
+      border-radius: var(--radius);
+      padding: 6px;
+      transition: background-color 180ms ease, border-color 180ms ease;
+    }
+    .health-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .health-item strong {
+      display: block;
+      font-family: var(--mono);
+      color: var(--text);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .amber { color: var(--amber); }
+    .muted { color: var(--muted); }
+    .flash-up { animation: flashUp 450ms ease; }
+    .flash-down { animation: flashDown 450ms ease; }
+    .soft-update { animation: softUpdate 360ms ease; }
+    @keyframes livePulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(32, 212, 139, 0.12); }
+      50% { box-shadow: 0 0 0 6px rgba(32, 212, 139, 0.02); }
+    }
+    @keyframes panelIn {
+      from { opacity: 0.75; }
+      to { opacity: 1; }
+    }
+    @keyframes tradeIn {
+      from { opacity: 0; transform: translateY(-8px); background: rgba(255, 255, 255, 0.055); }
+      to { opacity: 1; transform: translateY(0); background: transparent; }
+    }
+    @keyframes rowSettle {
+      from { opacity: 0.82; transform: translateX(3px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes depthGrow {
+      from { transform: scaleX(0.72); }
+      to { transform: scaleX(1); }
+    }
+    @keyframes flashUp {
+      0% { color: var(--green); transform: translateY(-1px); text-shadow: 0 0 14px rgba(32, 212, 139, 0.45); }
+      100% { color: inherit; transform: translateY(0); text-shadow: none; }
+    }
+    @keyframes flashDown {
+      0% { color: var(--red); transform: translateY(1px); text-shadow: 0 0 14px rgba(255, 95, 115, 0.45); }
+      100% { color: inherit; transform: translateY(0); text-shadow: none; }
+    }
+    @keyframes softUpdate {
+      0% { transform: translateY(-1px); color: #ffffff; }
+      100% { transform: translateY(0); color: inherit; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+
+    @media (max-width: 1260px) {
+      body { overflow: auto; }
+      #app { min-height: 100%; height: auto; }
+      .content { overflow: visible; }
+      .markets { grid-template-columns: minmax(0, 1fr); height: auto; }
+      .db-total-center { display: none; }
+      .market { min-height: 940px; grid-template-rows: auto 340px auto 1fr; }
+      .market-head { grid-template-columns: 1fr; }
+      .market.btc .market-head,
+      .market.ada .market-head { grid-template-columns: 1fr; }
+      .market.ada .market-head > div:first-child { padding-left: 0; }
+      .market.btc .market-meta,
+      .market.ada .market-meta { justify-self: stretch; width: auto; }
+      .market-meta { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .brand { min-width: auto; }
+      .brand-sub { max-width: 360px; }
+      .market-chip { min-width: 170px; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar { height: auto; min-height: var(--header-h); flex-wrap: wrap; padding: 10px 12px; }
+      .brand { width: 100%; flex-basis: 100%; }
+      .brand-sub { display: none; }
+      .market-strip { order: 4; width: 100%; overflow-x: auto; justify-content: flex-end; margin-left: 0; }
+      .market-chip { min-width: 200px; }
+      .toolbar { margin-left: auto; }
+      .market { min-height: 1060px; grid-template-rows: auto 300px auto 1fr; }
+      .market-meta, .flow-row, .lower-grid, .health { grid-template-columns: 1fr 1fr; }
+      .lower-grid { grid-template-rows: 420px 1fr; }
+      .big-price { font-size: 27px; }
+      button[data-view="split"] { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-title">Microstructure Console</div>
+        <div class="brand-sub" id="db-write-summary">DB writes --</div>
+      </div>
+      <div class="toolbar" aria-label="View controls">
+        <button type="button" class="active" data-view="split">Split</button>
+        <button type="button" data-view="BTC">BTC</button>
+        <button type="button" data-view="ADA">ADA</button>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="market-strip" id="market-strip"></div>
+    </header>
+    <main class="content">
+      <div class="markets" id="markets"></div>
+    </main>
+  </div>
+
+  <script>
+    const SYMBOLS = [
+      { key: "BTC", pair: "BTCUSDT", accent: "#f59a23" },
+      { key: "ADA", pair: "ADAUSDT", accent: "#3ca4ff" },
+    ];
+    const POLL_MS = 700;
+    const CHART_LIMIT = 700;
+    const STALE_SEC = 6;
+    const state = new Map();
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = {
+      price(value, key) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "--";
+        return n.toLocaleString(undefined, {
+          minimumFractionDigits: key === "ADA" ? 5 : 2,
+          maximumFractionDigits: key === "ADA" ? 5 : 2,
+        });
+      },
+      qty(value, key) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "--";
+        return n.toLocaleString(undefined, {
+          minimumFractionDigits: key === "ADA" ? 0 : 4,
+          maximumFractionDigits: key === "ADA" ? 0 : 4,
+        });
+      },
+      compact(value, digits = 0) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "--";
+        return Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: digits }).format(n);
+      },
+      number(value, digits = 2) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "--";
+        return n.toLocaleString(undefined, { maximumFractionDigits: digits });
+      },
+      bps(value) {
+        const n = Number(value);
+        return Number.isFinite(n) ? `${n.toFixed(3)} bp` : "--";
+      },
+      pct(value, scale = 100) {
+        const n = Number(value);
+        return Number.isFinite(n) ? `${(n * scale).toFixed(3)}%` : "--";
+      },
+      time(ms) {
+        const n = Number(ms);
+        if (!Number.isFinite(n)) return "--";
+        return new Date(n).toLocaleTimeString("en-US", { hour12: false });
+      },
+      age(ts) {
+        const n = Number(ts);
+        if (!Number.isFinite(n)) return "--";
+        const sec = Math.max(0, Date.now() / 1000 - n);
+        return sec < 60 ? `${sec.toFixed(1)}s` : `${Math.floor(sec / 60)}m ${Math.floor(sec % 60)}s`;
+      },
+    };
+
+    function templateMarket(meta) {
+      const k = meta.key;
+      return `
+        <section class="market ${k.toLowerCase()}" id="panel-${k}">
+          <div class="market-head">
+            <div>
+              <div class="title-row">
+                <div class="symbol">${meta.pair}</div>
+                <div class="badge"><span class="dot" id="${k}-dot"></span><span id="${k}-status">connecting</span></div>
+              </div>
+              <div class="price-line">
+                <div class="big-price" id="${k}-price">--</div>
+                <div class="session-change muted" id="${k}-session">session --</div>
+              </div>
+            </div>
+            <div class="market-meta">
+              ${metric(k, "bid", "Best Bid")}
+              ${metric(k, "ask", "Best Ask")}
+              ${metric(k, "spread", "Spread bps")}
+              ${metric(k, "obi", "OBI mean")}
+              ${metric(k, "obi-std", "OBI σ")}
+              ${metric(k, "spread-std", "Spread σ")}
+              ${metric(k, "tick-count", "Tick/s")}
+            </div>
+          </div>
+
+          <div class="chart-zone">
+            <div class="chart" id="${k}-chart"></div>
+            <div class="chart-empty" id="${k}-chart-empty">waiting for chart data</div>
+          </div>
+
+          <div class="flow-row">
+            <div class="flow-cell">
+              <div class="flow-label">1m Trades</div>
+              <div class="flow-value" id="${k}-count">--</div>
+            </div>
+            <div class="flow-cell">
+              <div class="flow-label">1m Volume</div>
+              <div class="flow-value" id="${k}-volume">--</div>
+            </div>
+            <div class="flow-cell">
+              <div class="flow-label">Buy Pressure</div>
+              <div class="flow-value" id="${k}-buy-ratio">--</div>
+              <div class="bar-track"><div class="bar-fill" id="${k}-buy-bar"></div></div>
+            </div>
+            <div class="flow-cell">
+              <div class="flow-label">Depth Imbalance</div>
+              <div class="flow-value" id="${k}-depth">--</div>
+            </div>
+          </div>
+
+          <div class="lower-grid">
+            <section class="section">
+              <div class="section-head">
+                <span>Order Book L5</span>
+                <span class="section-note" id="${k}-mid-note">mid --</span>
+              </div>
+              <div class="book-wrap">
+                <div class="book">
+                  <div class="book-head"><span>Lvl</span><span>Price</span><span>Qty</span></div>
+                  <div id="${k}-asks"></div>
+                  <div class="midline"><span>Spread</span><strong id="${k}-spread-line">--</strong></div>
+                  <div id="${k}-bids"></div>
+                </div>
+                <div class="health" id="${k}-health"></div>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-head">
+                <span>Trade Tape</span>
+                <span class="section-note" id="${k}-last-update">last --</span>
+              </div>
+              <div class="activity">
+                <div class="tape" id="${k}-tape"><div class="tape-empty">waiting for trades</div></div>
+              </div>
+            </section>
+          </div>
+        </section>
+      `;
+    }
+
+    function metric(key, id, label) {
+      return `<div class="metric"><div class="label">${label}</div><div class="value" id="${key}-${id}">--</div></div>`;
+    }
+
+    function renderShell() {
+      $("markets").innerHTML = `
+        <div class="db-total-center" id="db-total-center">
+          <span>DB Total</span>
+          <strong>-- rows</strong>
+        </div>
+        ${SYMBOLS.map(templateMarket).join("")}
+      `;
+      $("market-strip").innerHTML = SYMBOLS.map((s) => `
+        <div class="market-chip ${s.key.toLowerCase()}">
+          <strong>${s.key}</strong>
+          <span class="price" id="chip-${s.key}-price">--</span>
+          <span class="delta muted" id="chip-${s.key}-delta">--</span>
+        </div>
+      `).join("");
+      SYMBOLS.forEach((s) => {
+        state.set(s.key, {
+          meta: s,
+          chart: null,
+          series: null,
+          chartLastTime: 0,
+          sessionFirst: null,
+          prevMid: null,
+          lastTradeId: 0,
+          initializedTape: false,
+        });
+      });
+    }
+
+    function initCharts() {
+      if (!window.LightweightCharts) return;
+      SYMBOLS.forEach(({ key, accent }) => {
+        const holder = $(`${key}-chart`);
+        const chart = LightweightCharts.createChart(holder, {
+          width: holder.clientWidth,
+          height: holder.clientHeight,
+          layout: { background: { color: "#080c12" }, textColor: "#8c9bab" },
+          grid: {
+            vertLines: { color: "rgba(255,255,255,0.045)" },
+            horzLines: { color: "rgba(255,255,255,0.045)" },
+          },
+          rightPriceScale: { borderColor: "rgba(255,255,255,0.08)", scaleMargins: { top: 0.16, bottom: 0.18 } },
+          timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true, secondsVisible: true },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        });
+        const series = chart.addAreaSeries({
+          lineColor: accent,
+          topColor: `${accent}2e`,
+          bottomColor: `${accent}03`,
+          lineWidth: 2,
+          priceLineVisible: true,
+          priceFormat: key === "ADA"
+            ? { type: "price", precision: 4, minMove: 0.0001 }
+            : { type: "price", precision: 2, minMove: 0.01 },
+        });
+        state.get(key).chart = chart;
+        state.get(key).series = series;
+        fetch(`/api/chart/${key}?limit=${CHART_LIMIT}`, { cache: "no-store" })
+          .then((r) => r.ok ? r.json() : [])
+          .then((rows) => {
+            const clean = dedupeChart(rows);
+            if (clean.length) {
+              series.setData(clean);
+              state.get(key).chartLastTime = clean.at(-1).time;
+              $(`${key}-chart-empty`).style.display = "none";
+            }
+          })
+          .catch(() => {});
+      });
+
+      new ResizeObserver(() => {
+        SYMBOLS.forEach(({ key }) => {
+          const st = state.get(key);
+          const holder = $(`${key}-chart`);
+          if (st.chart && holder.clientWidth && holder.clientHeight) {
+            st.chart.applyOptions({ width: holder.clientWidth, height: holder.clientHeight });
+          }
+        });
+      }).observe($("markets"));
+    }
+
+    function dedupeChart(rows) {
+      const points = new Map();
+      for (const row of rows || []) {
+        const time = Number(row.time);
+        const value = Number(row.value);
+        if (Number.isFinite(time) && Number.isFinite(value)) points.set(time, value);
+      }
+      return Array.from(points, ([time, value]) => ({ time, value })).sort((a, b) => a.time - b.time);
+    }
+
+    function setText(id, value) {
+      const el = $(id);
+      if (!el) return;
+      const next = value == null || value === "" ? "--" : String(value);
+      if (el.textContent === next) return;
+      el.textContent = next;
+
+      const quiet = id.endsWith("-status") || id.endsWith("-last-update") || id.startsWith("chip-");
+      if (!quiet && (el.classList.contains("value") || el.classList.contains("flow-value"))) {
+        el.classList.remove("soft-update");
+        void el.offsetWidth;
+        el.classList.add("soft-update");
+
+        const metric = el.closest(".metric");
+        if (metric) {
+          metric.classList.add("live-change");
+          window.setTimeout(() => metric.classList.remove("live-change"), 240);
+        }
+      }
+    }
+
+    function flashValue(id, next, previous) {
+      const el = $(id);
+      if (!el || !Number.isFinite(Number(next)) || !Number.isFinite(Number(previous)) || Number(next) === Number(previous)) return;
+      el.classList.remove("flash-up", "flash-down");
+      void el.offsetWidth;
+      el.classList.add(Number(next) > Number(previous) ? "flash-up" : "flash-down");
+    }
+
+    async function poll(key) {
+      try {
+        const res = await fetch(`/api/snapshot/${key}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        requestAnimationFrame(() => updateMarket(key, data));
+      } catch (err) {
+        markOffline(key, "api error");
+      } finally {
+        setTimeout(() => poll(key), POLL_MS);
+      }
+    }
+
+    function markOffline(key, message) {
+      const dot = $(`${key}-dot`);
+      dot.className = "dot";
+      setText(`${key}-status`, message);
+      setText(`${key}-last-update`, "last --");
+    }
+
+    function updateMarket(key, data) {
+      if (data.error) {
+        markOffline(key, data.error);
+        return;
+      }
+
+      const st = state.get(key);
+      const l1 = data.l1 || {};
+      const prevMid = st.prevMid;
+      const mid = Number(l1.mid_price);
+
+      updateStatus(key, data);
+      updatePriceBlock(key, l1, st);
+      updateFlow(key, data);
+      updateBook(key, data);
+      updateTape(key, data.recent_trades || []);
+      updateHealth(key, data);
+      updateChart(key, data.recent_trades || []);
+      updateHeaderDbSummary(key, data);
+
+      if (Number.isFinite(mid)) {
+        flashValue(`${key}-price`, mid, prevMid);
+        st.prevMid = mid;
+      }
+    }
+
+    function updateHeaderDbSummary(key, data) {
+      const st = state.get(key);
+      st.rowCounts = data.row_counts || {};
+      const tables = [
+        "trades",
+        "agg_trades",
+        "orderbook_l1",
+        "orderbook_l5",
+        "orderbook_l20",
+        "orderbook_metrics",
+        "mark_price",
+        "liquidations",
+        "harvester_events",
+      ];
+      const parts = SYMBOLS.map(({ key: symbolKey }) => {
+        const rows = state.get(symbolKey)?.rowCounts || {};
+        const total = tables.reduce((acc, name) => acc + Number(rows[name] || 0), 0);
+        const trades = Number(rows.trades || 0);
+        return `${symbolKey} ${fmt.compact(total, 1)} rows (${fmt.compact(trades, 1)} trades)`;
+      });
+      const grandTotal = SYMBOLS.reduce((sum, { key: symbolKey }) => {
+        const rows = state.get(symbolKey)?.rowCounts || {};
+        return sum + tables.reduce((acc, name) => acc + Number(rows[name] || 0), 0);
+      }, 0);
+
+      setText("db-write-summary", parts.join(" | "));
+      const totalEl = $("db-total-center");
+      if (totalEl) {
+        totalEl.innerHTML = `<span>DB Total</span><strong>${fmt.compact(grandTotal, 1)} rows</strong>`;
+      }
+    }
+
+    function updateStatus(key, data) {
+      const age = Date.now() / 1000 - Number(data.ts);
+      const dot = $(`${key}-dot`);
+      const isLive = Number.isFinite(age) && age <= STALE_SEC;
+      dot.className = `dot ${isLive ? "live" : "stale"}`;
+      setText(`${key}-status`, isLive ? "live" : "stale");
+      setText(`${key}-last-update`, `last ${fmt.age(data.ts)}`);
+    }
+
+    function updatePriceBlock(key, l1, st) {
+      const mid = Number(l1.mid_price);
+      if (Number.isFinite(mid) && st.sessionFirst == null) st.sessionFirst = mid;
+
+      setText(`${key}-price`, fmt.price(mid, key));
+      setText(`chip-${key}-price`, fmt.price(mid, key));
+      setText(`${key}-bid`, fmt.price(l1.bid_price, key));
+      setText(`${key}-ask`, fmt.price(l1.ask_price, key));
+      setText(`${key}-spread`, fmt.bps(l1.spread_bps));
+      setText(`${key}-spread-line`, fmt.bps(l1.spread_bps));
+      setText(`${key}-obi`, fmt.pct(l1.obi));
+      setText(`${key}-obi-std`,    l1.obi_std     != null ? Number(l1.obi_std).toFixed(4)     : '--');
+      setText(`${key}-spread-std`, l1.spread_bps_std != null ? Number(l1.spread_bps_std).toFixed(3) + ' bp' : '--');
+      setText(`${key}-tick-count`, l1.tick_count   != null ? Number(l1.tick_count).toFixed(0) : '--');
+      setText(`${key}-mid-note`, `mid ${fmt.price(mid, key)}`);
+
+      let label = "session --";
+      let chip = "--";
+      if (Number.isFinite(mid) && Number.isFinite(st.sessionFirst) && st.sessionFirst !== 0) {
+        const change = (mid - st.sessionFirst) / st.sessionFirst * 100;
+        label = `session ${change >= 0 ? "+" : ""}${change.toFixed(3)}%`;
+        chip = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+      }
+      setText(`${key}-session`, label);
+      setText(`chip-${key}-delta`, chip);
+      const cls = label.includes("+") ? "green" : label.includes("-") ? "red" : "muted";
+      $(`${key}-session`).className = `session-change ${cls}`;
+      $(`chip-${key}-delta`).className = `delta ${cls}`;
+    }
+
+    function updateFlow(key, data) {
+      const stats = data.stats_1m || {};
+      const metrics = data.metrics_l20 || data.metrics_l5 || {};
+      const buy = Number(stats.buy_volume || 0);
+      const sell = Number(stats.sell_volume || 0);
+      const total = buy + sell;
+      const ratio = total > 0 ? buy / total : null;
+
+      setText(`${key}-count`, fmt.number(stats.count, 0));
+      setText(`${key}-volume`, fmt.qty(stats.volume, key));
+      setText(`${key}-buy-ratio`, ratio == null ? "--" : `${(ratio * 100).toFixed(1)}%`);
+      setText(`${key}-depth`, fmt.pct(metrics.depth_imbalance));
+      $(`${key}-buy-bar`).style.width = `${Math.max(0, Math.min(100, (ratio || 0) * 100))}%`;
+    }
+
+    function updateBook(key, data) {
+      const rows = data.l5 || [];
+      const asks = rows.slice().sort((a, b) => Number(b.level) - Number(a.level));
+      const bids = rows.slice().sort((a, b) => Number(a.level) - Number(b.level));
+      const maxQty = Math.max(0.000001, ...rows.flatMap((r) => [Number(r.ask_qty || 0), Number(r.bid_qty || 0)]));
+      $(`${key}-asks`).innerHTML = asks.map((row) => bookRow(key, "ask", row.level, row.ask_price, row.ask_qty, maxQty)).join("");
+      $(`${key}-bids`).innerHTML = bids.map((row) => bookRow(key, "bid", row.level, row.bid_price, row.bid_qty, maxQty)).join("");
+    }
+
+    function bookRow(key, side, level, price, qty, maxQty) {
+      const pct = Math.max(2, Math.min(100, Number(qty || 0) / maxQty * 100));
+      return `
+        <div class="book-row ${side}">
+          <div class="book-bg" style="width:${pct}%"></div>
+          <span>${level || "--"}</span>
+          <span class="price-col">${fmt.price(price, key)}</span>
+          <span>${fmt.qty(qty, key)}</span>
+        </div>
+      `;
+    }
+
+    function updateTape(key, trades) {
+      const st = state.get(key);
+      const tape = $(`${key}-tape`);
+      if (!trades.length) {
+        if (!st.initializedTape) tape.innerHTML = `<div class="tape-empty">waiting for trades</div>`;
+        return;
+      }
+
+      const newest = Math.max(...trades.map((t) => Number(t.id || 0)));
+      let rows = trades;
+      if (st.initializedTape) rows = trades.filter((t) => Number(t.id || 0) > st.lastTradeId);
+      if (!rows.length) return;
+
+      const html = rows
+        .sort((a, b) => Number(b.id || 0) - Number(a.id || 0))
+        .slice(0, 24)
+        .map((t) => {
+          const buy = Number(t.is_buyer_maker) === 0;
+          return `
+            <div class="tape-row ${buy ? "buy" : "sell"}">
+              <span>${fmt.time(t.trade_ts)}</span>
+              <span>${fmt.price(t.price, key)}</span>
+              <span>${fmt.qty(t.qty, key)}</span>
+            </div>
+          `;
+        }).join("");
+
+      if (!st.initializedTape) {
+        tape.innerHTML = html;
+        st.initializedTape = true;
+      } else {
+        tape.insertAdjacentHTML("afterbegin", html);
+        while (tape.children.length > 42) tape.lastElementChild.remove();
+      }
+      st.lastTradeId = Math.max(st.lastTradeId, newest);
+    }
+
+    function updateChart(key, trades) {
+      const st = state.get(key);
+      if (!st.series || !trades.length) return;
+      const points = dedupeChart(trades.map((t) => ({
+        time: Math.floor(Number(t.trade_ts) / 1000),
+        value: Number(t.price),
+      })));
+      for (const point of points) {
+        if (point.time >= st.chartLastTime) {
+          st.series.update(point);
+          st.chartLastTime = point.time;
+          $(`${key}-chart-empty`).style.display = "none";
+        }
+      }
+    }
+
+    function updateHealth(key, data) {
+      const rc = data.row_counts || {};
+      const items = [
+        ["DB Size", `${fmt.number(data.db_size_mb, 1)} MB`],
+        ["Trades", fmt.compact(rc.trades, 1)],
+        ["L1 Rows", fmt.compact(rc.orderbook_l1, 1)],
+        ["L20 Rows", fmt.compact(rc.orderbook_l20, 1)],
+        ["Depth Metrics", fmt.compact(rc.orderbook_metrics, 1)],
+        ["Agg Trades", fmt.compact(rc.agg_trades, 1)],
+        ["Mark Price", fmt.compact(rc.mark_price, 1)],
+        ["Events", fmt.compact(rc.harvester_events, 1)],
+      ];
+      $(`${key}-health`).innerHTML = items.map(([label, value]) => `
+        <div class="health-item"><span>${label}</span><strong>${value}</strong></div>
+      `).join("");
+    }
+
+    function bindControls() {
+      document.querySelectorAll("[data-view]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const view = btn.dataset.view;
+          document.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("active", b === btn));
+          const markets = $("markets");
+          markets.classList.toggle("single", view !== "split");
+          SYMBOLS.forEach(({ key }) => {
+            $(`panel-${key}`).classList.toggle("hidden", view !== "split" && view !== key);
+          });
+          setTimeout(() => SYMBOLS.forEach(({ key }) => {
+            const st = state.get(key);
+            const holder = $(`${key}-chart`);
+            if (st.chart) st.chart.applyOptions({ width: holder.clientWidth, height: holder.clientHeight });
+          }), 40);
+        });
+      });
+    }
+
+    function startClock() {
+      const tick = () => {
+        $("clock").textContent = new Date().toLocaleTimeString("en-US", { hour12: false });
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    renderShell();
+    bindControls();
+    startClock();
+    initCharts();
+    SYMBOLS.forEach(({ key }) => poll(key));
+  </script>
+</body>
+</html>

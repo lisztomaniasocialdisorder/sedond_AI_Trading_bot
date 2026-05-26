@@ -1,0 +1,1825 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 交易面板</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: #111b26;
+      --panel-2: #162333;
+      --panel-3: #1b2b3d;
+      --line: #28394c;
+      --text: #edf5ff;
+      --muted: #8fa4b9;
+      --green: #24d18f;
+      --red: #ff6478;
+      --amber: #f4bf55;
+      --blue: #52a8ff;
+      --violet: #b58cff;
+      --cyan: #45d8d2;
+      --radius: 8px;
+      --mono: "JetBrains Mono", Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      letter-spacing: 0;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel-2);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: #5a718a;
+      background: var(--panel-3);
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    input, select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0b141d;
+      color: var(--text);
+      outline: 0;
+      padding: 0 10px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue);
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .shell {
+      width: min(1880px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 14px 0 26px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 8px 0 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 52px);
+      line-height: .95;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(88px, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #0b141d;
+    }
+
+    .segmented.three {
+      grid-template-columns: repeat(3, minmax(72px, 1fr));
+    }
+
+    .segmented button {
+      min-height: 38px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .segmented button.active {
+      background: var(--panel-2);
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px #39516a;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(244, 191, 85, .36);
+      border-radius: 999px;
+      padding: 0 12px;
+      background: rgba(244, 191, 85, .08);
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1.35fr repeat(6, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      animation: panelIn 360ms ease both;
+    }
+
+    .metric {
+      min-height: 112px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 850;
+    }
+
+    .value {
+      margin-top: 9px;
+      font-size: clamp(25px, 2.2vw, 40px);
+      font-weight: 880;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .subvalue {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .88fr) minmax(560px, 1.44fr) minmax(360px, .92fr);
+      gap: 12px;
+      margin-top: 12px;
+      align-items: start;
+    }
+
+    .section-head {
+      min-height: 52px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 880;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      background: #0b141d;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .buy.active,
+    .submit-buy {
+      color: var(--green);
+      border-color: rgba(36, 209, 143, .54);
+      background: rgba(36, 209, 143, .12);
+    }
+
+    .sell.active,
+    .submit-sell {
+      color: var(--red);
+      border-color: rgba(255, 100, 120, .54);
+      background: rgba(255, 100, 120, .12);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini {
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.025);
+      padding: 10px;
+    }
+
+    .mini span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 850;
+    }
+
+    .mini strong {
+      display: block;
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      border: 1px solid rgba(244, 191, 85, .28);
+      border-radius: var(--radius);
+      background: rgba(244, 191, 85, .07);
+      color: var(--amber);
+      padding: 11px;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .chart {
+      min-height: 420px;
+      padding: 8px;
+    }
+
+    .indicator-stack {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .small-chart {
+      min-height: 190px;
+      padding: 8px;
+    }
+
+    .fear-chart {
+      min-height: 240px;
+      padding: 8px;
+      margin-top: 12px;
+    }
+
+    .asset-chart {
+      min-height: 220px;
+      padding: 8px;
+    }
+
+    .chart,
+    .small-chart,
+    .fear-chart,
+    .asset-chart {
+      opacity: .98;
+      transition: opacity 180ms ease, border-color 180ms ease;
+    }
+
+    .chart.updating,
+    .small-chart.updating,
+    .fear-chart.updating,
+    .asset-chart.updating {
+      opacity: .72;
+      border-color: #3e5670;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .style-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #162333 0%, #0d1722 100%);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .style-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 0 14px;
+      font-weight: 880;
+      width: fit-content;
+    }
+
+    .aggressive { color: #fff; background: linear-gradient(90deg, #ff7a32, #d94d2d); }
+    .neutral { color: #fff; background: linear-gradient(90deg, #9677ff, #5f7bff); }
+    .conservative { color: #00131e; background: linear-gradient(90deg, #45d8d2, #52a8ff); }
+
+    .meter {
+      height: 9px;
+      border-radius: 999px;
+      background: #283544;
+      overflow: hidden;
+    }
+
+    .meter div {
+      width: 50%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--amber);
+      transition: width 220ms ease, background 220ms ease;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .row strong {
+      color: var(--text);
+      font-family: var(--mono);
+      text-align: right;
+    }
+
+    .order-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .record-list {
+      display: grid;
+      gap: 9px;
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .order-card,
+    .record-card {
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.025);
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+      animation: panelIn 220ms ease both;
+    }
+
+    .order-top,
+    .record-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    .order-grid,
+    .record-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .empty {
+      min-height: 116px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgba(255,255,255,.02);
+      font-family: var(--mono);
+    }
+
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .amber { color: var(--amber); }
+    .blue { color: var(--blue); }
+    .muted { color: var(--muted); }
+
+    @media (max-width: 1280px) {
+      .top-grid { grid-template-columns: repeat(3, 1fr); }
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100vw - 18px, 1880px); }
+      header { grid-template-columns: 1fr; }
+      .toolbar { justify-content: stretch; }
+      .segmented, .status-pill { width: 100%; }
+      .top-grid, .form-grid, .summary, .button-grid { grid-template-columns: 1fr; }
+      .value { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>AI 交易面板</h1>
+        <div class="subtitle">手動紙上交易、OKX dry-run、AI 風控與即時微結構資料。</div>
+      </div>
+      <div class="toolbar">
+        <div class="segmented" aria-label="Symbol selector">
+          <button id="symbolBTC" class="active" type="button">BTC</button>
+          <button id="symbolADA" type="button">ADA</button>
+        </div>
+        <div class="segmented three" aria-label="Risk profile">
+          <button data-risk="conservative" type="button">保守</button>
+          <button data-risk="neutral" class="active" type="button">中立</button>
+          <button data-risk="aggressive" type="button">激進</button>
+        </div>
+        <div id="okxStatus" class="status-pill"><i data-lucide="shield-alert" size="16"></i> OKX checking</div>
+      </div>
+    </header>
+
+    <section class="top-grid">
+      <div class="panel metric">
+        <div class="label">最新價格</div>
+        <div id="lastPrice" class="value">-</div>
+        <div id="bidAsk" class="subvalue">Bid - / Ask -</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">帳戶餘額</div>
+        <div id="accountBalance" class="value green">-</div>
+        <div id="accountEquity" class="subvalue">OKX USDT</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">AI 訊號</div>
+        <div id="signalText" class="value amber">-</div>
+        <div id="signalAction" class="subvalue">等待中</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">信心指數</div>
+        <div id="confidenceText" class="value blue">-</div>
+        <div class="subvalue">由 OBI、深度、資金流估算</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">執行槓桿</div>
+        <div id="execLev" class="value violet">-</div>
+        <div id="levExplain" class="subvalue">已套用風控</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">買方壓力</div>
+        <div id="buyPressure" class="value green">-</div>
+        <div class="subvalue">最近 60 秒</div>
+      </div>
+      <div class="panel metric">
+        <div class="label">資料庫狀態</div>
+        <div id="dbRows" class="value amber">-</div>
+        <div id="dbSize" class="subvalue">- MB</div>
+      </div>
+    </section>
+
+    <main class="main-grid">
+      <section class="panel">
+        <div class="section-head">
+          <div class="section-title">下單面板</div>
+          <div id="ticketMode" class="tag">紙上交易</div>
+        </div>
+        <div class="body">
+          <div class="segmented">
+            <button id="sideBuy" class="buy active" type="button"><i data-lucide="arrow-up" size="16"></i> 買入</button>
+            <button id="sideSell" class="sell" type="button"><i data-lucide="arrow-down" size="16"></i> 賣出</button>
+          </div>
+          <div class="segmented three">
+            <button data-order-type="market" class="active" type="button">市價</button>
+            <button data-order-type="limit" type="button">限價</button>
+            <button data-order-type="post_only" type="button">Post Only</button>
+          </div>
+          <div class="form-grid">
+            <label>本金 (USDT)
+              <input id="principal" inputmode="decimal" value="50">
+            </label>
+            <label>AI 可用資金 (USDT)
+              <input id="aiCapital" inputmode="decimal" value="50">
+            </label>
+            <label>最大槓桿
+              <input id="maxLev" inputmode="numeric" value="10">
+            </label>
+            <label>限價價格
+              <input id="limitPrice" inputmode="decimal" placeholder="自動使用中間價">
+            </label>
+            <label>黑天鵝緩衝金
+              <input id="reserve" inputmode="decimal" value="0">
+            </label>
+            <label>止損 %
+              <input id="slPct" inputmode="decimal" value="1.0">
+            </label>
+            <label>止盈 %
+              <input id="tpPct" inputmode="decimal" value="1.5">
+            </label>
+          </div>
+          <div class="summary">
+            <div class="mini"><span>名目金額</span><strong id="notional">-</strong></div>
+            <div class="mini"><span>初始保證金</span><strong id="margin">-</strong></div>
+            <div class="mini"><span>止損價格</span><strong id="stopPrice">-</strong></div>
+            <div class="mini"><span>止盈價格</span><strong id="tpPrice">-</strong></div>
+          </div>
+          <div class="button-grid">
+            <button id="paperSubmit" class="submit-buy" type="button"><i data-lucide="send" size="16"></i> 送出紙上單</button>
+            <button id="okxDryRun" type="button"><i data-lucide="plug-zap" size="16"></i> OKX Dry Run</button>
+            <button id="okxLive" type="button"><i data-lucide="radio-tower" size="16"></i> 送模擬盤</button>
+            <button id="autoPaper" type="button"><i data-lucide="bot" size="16"></i> AI 紙上單一次</button>
+            <button id="clearOrders" type="button"><i data-lucide="trash-2" size="16"></i> 清除</button>
+          </div>
+          <div class="notice" id="safetyNote">真實送單目前鎖定。OKX 只會 dry-run，除非你明確打開本機風控開關與 server 確認。</div>
+        </div>
+      </section>
+
+      <section>
+        <div class="panel">
+          <div class="section-head">
+            <div class="section-title">圖表與訊號</div>
+            <div id="marketAge" class="tag">等待中</div>
+          </div>
+          <div id="klineChart" class="chart"></div>
+        </div>
+        <div class="indicator-stack">
+          <div class="panel small-chart" id="macdChart"></div>
+          <div class="panel small-chart" id="rsiChart"></div>
+          <div class="panel small-chart" id="atrChart"></div>
+        </div>
+        <div class="panel fear-chart" id="fearGreedChart"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div class="section-title">AI 與風控</div>
+          <div id="tradeState" class="tag">standby</div>
+        </div>
+        <div class="body">
+          <div class="style-card">
+            <div>
+              <div class="label">AI 市場風格</div>
+              <div id="styleBadge" class="style-badge neutral">中立</div>
+              <div id="styleReason" class="subvalue">等待資料</div>
+            </div>
+            <div>
+              <div class="row"><span>方向信心</span><strong id="confDetail">-</strong></div>
+              <div class="meter"><div id="confMeter"></div></div>
+            </div>
+          </div>
+
+          <div class="style-card">
+            <div class="row"><span>價差</span><strong id="spread">-</strong></div>
+            <div class="row"><span>OBI</span><strong id="obi">-</strong></div>
+            <div class="row"><span>深度不平衡</span><strong id="depthImb">-</strong></div>
+            <div class="row"><span>風控阻擋</span><strong id="riskBlock">無</strong></div>
+          </div>
+
+          <div class="style-card">
+            <div class="row"><span>OKX 帳戶</span><strong id="accountState">尚未載入</strong></div>
+            <div class="row"><span>連接模式</span><strong id="adapterMode">dry-run</strong></div>
+            <div class="row"><span>最後回應</span><strong id="okxLast">-</strong></div>
+          </div>
+
+          <div>
+            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
+              <div class="section-title">OKX 持倉</div>
+              <div id="positionCount" class="tag">0 pos</div>
+            </div>
+            <div id="okxPositions" class="record-list"></div>
+          </div>
+
+          <div>
+            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
+              <div class="section-title">未成交委託</div>
+              <div id="pendingOrderCount" class="tag">0 orders</div>
+            </div>
+            <div id="okxPendingOrders" class="record-list"></div>
+          </div>
+
+          <div>
+            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
+              <div class="section-title">總資產日結</div>
+              <div id="equityCount" class="tag">0 days</div>
+            </div>
+            <div id="equityChart" class="panel asset-chart"></div>
+          </div>
+
+          <div>
+            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
+              <div class="section-title">紙上倉位</div>
+              <div id="orderCount" class="tag">0 orders</div>
+            </div>
+            <div id="positions" class="order-list"></div>
+          </div>
+
+          <div>
+            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
+              <div class="section-title">交易紀錄</div>
+              <div id="tradeRecordCount" class="tag">0 records</div>
+            </div>
+            <div id="tradeRecords" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SYMBOLS = {
+      BTC: { pair: "BTCUSDT", okxInst: "BTC-USDT-SWAP", dp: 2, qtyDp: 6, defaultPrincipal: "50" },
+      ADA: { pair: "ADAUSDT", okxInst: "ADA-USDT-SWAP", dp: 4, qtyDp: 2, defaultPrincipal: "50" },
+    };
+
+    const RISK = {
+      conservative: { label: "保守", mult: 0.4, maxScore: 1.4 },
+      neutral: { label: "中立", mult: 0.7, maxScore: 2.2 },
+      aggressive: { label: "激進", mult: 1.0, maxScore: 3.2 },
+    };
+
+    const PREF_KEY = "tradingUiPrefs.v1";
+    const EQUITY_KEY = "okxDailyEquity.v1";
+    const RECORD_KEY = "tradeRecords.v1";
+    const SERVER_STATE_URL = "/api/trading/state";
+
+    function loadJson(key, fallback) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || "null");
+        return value ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    let savedPrefs = loadJson(PREF_KEY, {});
+
+    const state = {
+      symbol: savedPrefs.symbol || "BTC",
+      side: savedPrefs.side || "buy",
+      orderType: savedPrefs.orderType || "market",
+      risk: savedPrefs.risk || localStorage.getItem("tradeRiskProfile") || "neutral",
+      data: {},
+      indicators: {},
+      okx: {},
+      account: null,
+      pendingOrders: [],
+      orders: JSON.parse(localStorage.getItem("paperOrders.v2") || "[]"),
+      tradeRecords: loadJson(RECORD_KEY, []),
+      equitySnapshots: loadJson(EQUITY_KEY, []),
+      chartRange: JSON.parse(localStorage.getItem("tradingChartRange.v1") || "null"),
+      applyingChartRange: false,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const num = (v) => {
+      const raw = String(v ?? "").replace(/,/g, "").trim();
+      if (!raw) return NaN;
+      return Number(raw);
+    };
+    const finite = (v) => Number.isFinite(Number(v));
+
+    function fmt(n, digits = 2) {
+      if (!finite(n)) return "-";
+      return Number(n).toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
+    }
+
+    function money(n, digits = 2) {
+      return finite(n) ? `$${fmt(n, digits)}` : "-";
+    }
+
+    function pct(n, digits = 1) {
+      return finite(n) ? `${fmt(Number(n) * 100, digits)}%` : "-";
+    }
+
+    function compact(n) {
+      if (!finite(n)) return "-";
+      return Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 2 }).format(Number(n));
+    }
+
+    function currentData() {
+      return state.data[state.symbol] || {};
+    }
+
+    function latest() {
+      return currentData().latest || {};
+    }
+
+    function symbolMeta() {
+      return SYMBOLS[state.symbol];
+    }
+
+    function priceDigits() {
+      return symbolMeta().dp;
+    }
+
+    function getEntry() {
+      const l = latest();
+      const limit = num($("limitPrice").value);
+      return state.orderType !== "market" && finite(limit) ? limit : num(l.price);
+    }
+
+    function getPrincipal() {
+      return num($("principal").value);
+    }
+
+    function okxUsdtBalance() {
+      const details = state.account?.balances?.data?.[0]?.details || [];
+      return details.find((d) => d.ccy === "USDT") || null;
+    }
+
+    function getAvailableUsdt() {
+      const row = okxUsdtBalance();
+      return row ? num(row.availBal ?? row.availEq ?? row.eq) : NaN;
+    }
+
+    function getAccountRoot() {
+      return state.account?.balances?.data?.[0] || {};
+    }
+
+    function getAccountEquity() {
+      const root = getAccountRoot();
+      const totalEq = num(root.totalEq);
+      if (finite(totalEq)) return totalEq;
+      const usdt = okxUsdtBalance();
+      return usdt ? num(usdt.eqUsd ?? usdt.eq) : NaN;
+    }
+
+    function getAiCapital() {
+      return num($("aiCapital").value);
+    }
+
+    function getEffectivePrincipal({ aiCapped = false } = {}) {
+      const principal = getPrincipal();
+      if (!aiCapped) return principal;
+      const cap = getAiCapital();
+      const available = getAvailableUsdt();
+      const limits = [principal, cap, available].filter((v) => finite(v) && Number(v) > 0);
+      return limits.length ? Math.min(...limits.map(Number)) : principal;
+    }
+
+    function getBaseQty(entry = getEntry(), principal = getPrincipal()) {
+      return finite(principal) && principal > 0 && finite(entry) && entry > 0
+        ? principal / entry
+        : NaN;
+    }
+
+    function flowScore(data) {
+      const bp = Number(data.latest?.buy_pressure);
+      return finite(bp) ? (bp - .5) * 2 : 0;
+    }
+
+    function computeSignal(data) {
+      const l = data.latest || {};
+      const obi = Number(l.obi || 0);
+      const depth = Number(l.depth_imbalance || 0);
+      const flow = flowScore(data);
+      const spread = Math.abs(Number(l.spread_bps || 0));
+      let score = (obi * .38) + (depth * .34) + (flow * .28);
+      if (spread > 2.5) score *= .72;
+      score = Math.max(-1, Math.min(1, score));
+      const confidence = Math.min(1, Math.abs(score) * 1.65);
+      const pFlat = Math.max(.12, 1 - confidence);
+      const sideProb = (1 - pFlat) * .84;
+      const pLong = score >= 0 ? pFlat * .5 + sideProb : pFlat * .5 + ((1 - pFlat) - sideProb);
+      const pShort = score < 0 ? pFlat * .5 + sideProb : pFlat * .5 + ((1 - pFlat) - sideProb);
+      let signal = "觀望";
+      let action = "等待";
+      if (confidence >= .28 && score > .08) {
+        signal = "看漲";
+        action = "買入 / 做多";
+      } else if (confidence >= .28 && score < -.08) {
+        signal = "看跌";
+        action = "賣出 / 做空";
+      }
+      return { score, confidence, pLong, pShort, pFlat, signal, action };
+    }
+
+    function classifyStyle(data, signal) {
+      const l = data.latest || {};
+      const spread = Math.abs(Number(l.spread_bps || 0));
+      const depth = Math.abs(Number(l.depth_imbalance || 0));
+      const buyPressure = Number(l.buy_pressure ?? .5);
+      let score = 0;
+      if (signal.confidence >= .55) score += .9;
+      else if (signal.confidence < .18) score -= .5;
+      if (spread < .8) score += .4;
+      else if (spread > 3) score -= .9;
+      if (depth > .18) score += .35;
+      if (buyPressure > .62 || buyPressure < .38) score += .25;
+      const reserve = num($("reserve").value) || 0;
+      if (reserve > 0) score -= .25;
+      if (score >= .8) return { key: "aggressive", label: "激進", score, reason: "方向偏向明顯，且交易摩擦可接受" };
+      if (score <= -.45) return { key: "conservative", label: "保守", score, reason: "信心偏弱、價差偏大，或已啟用保留資金" };
+      return { key: "neutral", label: "中立", score, reason: "訊號與交易條件相對平衡" };
+    }
+
+    function riskBlock(data, signal) {
+      const l = data.latest || {};
+      const spread = Math.abs(Number(l.spread_bps || 0));
+      const reserve = num($("reserve").value) || 0;
+      if (!data.ok) return "資料離線";
+      if (spread > 8) return "價差過大";
+      if (signal.confidence < .12) return "信心不足";
+      if (reserve > 0 && signal.confidence < .35) return "保留資金模式";
+      return "none";
+    }
+
+    function suggestedLeverage(data, signal, style) {
+      const maxLev = Math.max(1, num($("maxLev").value) || 1);
+      const profile = RISK[state.risk] || RISK.neutral;
+      const styleCap = RISK[style.key]?.maxScore || RISK.neutral.maxScore;
+      const raw = 1 + signal.confidence * styleCap * profile.mult;
+      return Math.max(1, Math.min(maxLev, raw));
+    }
+
+    async function loadSignal(symbolKey) {
+      try {
+        const res = await fetch(`/api/signal/${SYMBOLS[symbolKey].pair}`, { cache: "no-store" });
+        state.data[symbolKey] = await res.json();
+      } catch (err) {
+        state.data[symbolKey] = { ok: false, error: err.message };
+      }
+    }
+
+    async function loadIndicators(symbolKey) {
+      try {
+        const res = await fetch(`/api/trading/indicators/${SYMBOLS[symbolKey].pair}?interval=60&limit=21600`, { cache: "no-store" });
+        state.indicators[symbolKey] = await res.json();
+      } catch (err) {
+        state.indicators[symbolKey] = { ok: false, error: err.message };
+      }
+    }
+
+    async function loadOkxStatus() {
+      try {
+        state.okx = await (await fetch("/api/okx/status", { cache: "no-store" })).json();
+      } catch (err) {
+        state.okx = { configured: false, demo: true, live_enabled: false, error: err.message };
+      }
+      renderOkx();
+    }
+
+    async function loadAccount() {
+      try {
+        const res = await fetch("/api/okx/account", { cache: "no-store" });
+        state.account = await res.json();
+      } catch (err) {
+        state.account = { error: err.message };
+      }
+      recordDailyEquitySnapshot();
+      renderOkx();
+      renderPositions();
+      renderEquityChart();
+    }
+
+    async function loadPendingOrders() {
+      try {
+        const res = await fetch("/api/okx/orders", { cache: "no-store" });
+        const payload = await res.json();
+        state.pendingOrders = payload.data || [];
+      } catch {
+        state.pendingOrders = [];
+      }
+      renderPendingOrders();
+    }
+
+    function renderTop(data, signal, style, lev, block) {
+      const l = data.latest || {};
+      const digits = priceDigits();
+      $("lastPrice").textContent = fmt(l.price, digits);
+      $("bidAsk").textContent = `Bid ${fmt(l.best_bid, digits)} / Ask ${fmt(l.best_ask, digits)}`;
+      $("signalText").textContent = signal.signal;
+      $("signalText").className = `value ${signal.signal === "看漲" ? "green" : signal.signal === "看跌" ? "red" : "amber"}`;
+      $("signalAction").textContent = signal.action;
+      $("confidenceText").textContent = pct(signal.confidence, 1);
+      $("execLev").textContent = `${fmt(lev, 2)}x`;
+      $("levExplain").textContent = `${RISK[state.risk].label} + ${style.label}`;
+      $("buyPressure").textContent = pct(l.buy_pressure, 1);
+      $("dbRows").textContent = compact(data.total_rows);
+      $("dbSize").textContent = `${fmt(data.db_size_mb, 1)} MB`;
+      $("tradeState").textContent = block === "none" && signal.signal !== "觀望" ? "可交易" : block;
+      $("marketAge").textContent = finite(data.ts) ? `${Math.max(0, Date.now() / 1000 - data.ts).toFixed(1)}s old` : "等待中";
+      const accountRoot = state.account?.balances?.data?.[0] || {};
+      const usdt = okxUsdtBalance();
+      const totalEq = num(accountRoot.totalEq);
+      const usdtAvail = usdt ? num(usdt.availBal ?? usdt.availEq ?? usdt.eq) : NaN;
+      if (finite(totalEq)) {
+        $("accountBalance").textContent = money(totalEq);
+        $("accountEquity").textContent = `總權益 | USDT 可用 ${money(usdtAvail)} | ${state.okx?.demo ? "模擬盤" : "目前連線環境"}`;
+      } else if (usdt) {
+        $("accountBalance").textContent = money(usdtAvail);
+        $("accountEquity").textContent = `USDT 可用 | ${state.okx?.demo ? "模擬盤" : "目前連線環境"}`;
+      } else if (state.account?.error) {
+        $("accountBalance").textContent = "讀取失敗";
+        $("accountEquity").textContent = "檢查 OKX key";
+      } else {
+        $("accountBalance").textContent = "-";
+        $("accountEquity").textContent = "OKX";
+      }
+    }
+
+    function renderTicket(data, signal, style, lev, block) {
+      const entry = getEntry();
+      const notional = getPrincipal();
+      const qty = getBaseQty(entry);
+      const slPct = Math.max(0, num($("slPct").value) || 0) / 100;
+      const tpPct = Math.max(0, num($("tpPct").value) || 0) / 100;
+      const stop = finite(entry) ? state.side === "buy" ? entry * (1 - slPct) : entry * (1 + slPct) : NaN;
+      const take = finite(entry) ? state.side === "buy" ? entry * (1 + tpPct) : entry * (1 - tpPct) : NaN;
+      $("notional").textContent = finite(notional) ? `${money(notional)} / ${fmt(qty, symbolMeta().qtyDp)} ${state.symbol}` : "-";
+      const aiCapital = getEffectivePrincipal({ aiCapped: true });
+      $("margin").textContent = finite(notional) ? `${money(notional / lev)} | AI 上限 ${money(aiCapital)}` : "-";
+      $("stopPrice").textContent = fmt(stop, priceDigits());
+      $("tpPrice").textContent = fmt(take, priceDigits());
+      $("paperSubmit").className = state.side === "buy" ? "submit-buy" : "submit-sell";
+      $("riskBlock").textContent = block;
+      $("riskBlock").className = block === "none" ? "green" : "amber";
+    }
+
+    function renderRisk(data, signal, style) {
+      const l = data.latest || {};
+      $("styleBadge").textContent = style.label;
+      $("styleBadge").className = `style-badge ${style.key}`;
+      $("styleReason").textContent = `${style.reason}; score ${style.score.toFixed(2)}`;
+      $("confDetail").textContent = `${pct(signal.confidence, 1)} | score ${signal.score.toFixed(2)}`;
+      $("confMeter").style.width = `${Math.max(4, signal.confidence * 100)}%`;
+      $("confMeter").style.background = signal.signal === "看漲" ? "var(--green)" : signal.signal === "看跌" ? "var(--red)" : "var(--amber)";
+      $("spread").textContent = finite(l.spread_bps) ? `${fmt(l.spread_bps, 3)} bp` : "-";
+      $("obi").textContent = pct(l.obi, 2);
+      $("depthImb").textContent = pct(l.depth_imbalance, 2);
+    }
+
+    function techChartIds() {
+      return ["klineChart", "macdChart", "rsiChart", "atrChart"];
+    }
+
+    function snapshotChartRange() {
+      const plot = document.getElementById("klineChart");
+      const range = plot?._fullLayout?.xaxis?.range;
+      if (Array.isArray(range) && range.length === 2) {
+        state.chartRange = [range[0], range[1]];
+        localStorage.setItem("tradingChartRange.v1", JSON.stringify(state.chartRange));
+      }
+    }
+
+    function setChartsUpdating(on) {
+      techChartIds().forEach((id) => $(id)?.classList.toggle("updating", on));
+    }
+
+    function readRelayoutRange(event) {
+      if (!event) return null;
+      if (Array.isArray(event["xaxis.range"])) return event["xaxis.range"];
+      if (event["xaxis.range[0]"] !== undefined && event["xaxis.range[1]"] !== undefined) {
+        return [event["xaxis.range[0]"], event["xaxis.range[1]"]];
+      }
+      if (event["xaxis.autorange"]) {
+        state.chartRange = null;
+        localStorage.removeItem("tradingChartRange.v1");
+      }
+      return null;
+    }
+
+    function bindChartSync(id) {
+      const plot = document.getElementById(id);
+      if (!plot || plot.__syncBound || typeof plot.on !== "function") return;
+      plot.__syncBound = true;
+      plot.on("plotly_relayout", (event) => {
+        if (state.applyingChartRange) return;
+        const range = readRelayoutRange(event);
+        if (!range) return;
+        state.chartRange = range;
+        localStorage.setItem("tradingChartRange.v1", JSON.stringify(range));
+        state.applyingChartRange = true;
+        const update = { "xaxis.range[0]": range[0], "xaxis.range[1]": range[1] };
+        Promise.all(
+          techChartIds()
+            .filter((otherId) => otherId !== id)
+            .map((otherId) => {
+              const other = document.getElementById(otherId);
+              return other ? Plotly.relayout(other, update).catch(() => {}) : Promise.resolve();
+            })
+        ).finally(() => {
+          state.applyingChartRange = false;
+        });
+      });
+    }
+
+    function chartLayout(title, ytitle, height) {
+      const xaxis = { gridcolor: "#28394c", zerolinecolor: "#28394c" };
+      if (Array.isArray(state.chartRange) && state.chartRange.length === 2) {
+        xaxis.range = state.chartRange;
+        xaxis.autorange = false;
+      }
+      return {
+        title: { text: title, font: { color: "#edf5ff", size: 14 } },
+        paper_bgcolor: "#111b26",
+        plot_bgcolor: "#111b26",
+        font: { color: "#edf5ff" },
+        margin: { l: 54, r: 18, t: 42, b: 38 },
+        height,
+        uirevision: "shared-tech-range",
+        xaxis,
+        yaxis: { title: ytitle, gridcolor: "#28394c", zerolinecolor: "#28394c" },
+      };
+    }
+
+    function drawCharts(data, signal) {
+      const chartData = state.indicators[state.symbol] || {};
+      const candles = chartData.candles || [];
+      if (!candles.length) return;
+
+      snapshotChartRange();
+      setChartsUpdating(true);
+
+      const x = candles.map((r) => new Date(Number(r.time) * 1000));
+      const ids = techChartIds();
+      const config = { responsive: true, displayModeBar: true, scrollZoom: true };
+      const quietConfig = { responsive: true, displayModeBar: false, scrollZoom: true };
+
+      Plotly.react("klineChart", [{
+        x,
+        open: candles.map((r) => r.open),
+        high: candles.map((r) => r.high),
+        low: candles.map((r) => r.low),
+        close: candles.map((r) => r.close),
+        type: "candlestick",
+        name: "Kline",
+        increasing: { line: { color: "#24d18f" }, fillcolor: "#165f43" },
+        decreasing: { line: { color: "#ff6478" }, fillcolor: "#713042" },
+      }], {
+        ...chartLayout(`${SYMBOLS[state.symbol].pair} Kline`, "Price", 420),
+        xaxis: { ...chartLayout("", "", 420).xaxis, rangeslider: { visible: false } },
+        dragmode: "pan",
+      }, config).then(() => bindChartSync("klineChart"));
+
+      const macd = chartData.macd || [];
+      const mx = macd.map((r) => new Date(Number(r.time) * 1000));
+      Plotly.react("macdChart", [
+        {
+          x: mx,
+          y: macd.map((r) => r.hist),
+          type: "bar",
+          marker: { color: macd.map((r) => Number(r.hist || 0) >= 0 ? "#24d18f" : "#ff6478") },
+          name: "Hist",
+        },
+        {
+          x: mx,
+          y: macd.map((r) => r.macd),
+          type: "scatter",
+          mode: "lines",
+          line: { color: "#52a8ff", width: 1.5 },
+          name: "MACD",
+        },
+        {
+          x: mx,
+          y: macd.map((r) => r.signal),
+          type: "scatter",
+          mode: "lines",
+          line: { color: "#f4bf55", width: 1.5 },
+          name: "Signal",
+        },
+      ], chartLayout("MACD", "MACD", 190), quietConfig).then(() => bindChartSync("macdChart"));
+
+      const rsi = chartData.rsi || [];
+      Plotly.react("rsiChart", [{
+        x: rsi.map((r) => new Date(Number(r.time) * 1000)),
+        y: rsi.map((r) => r.value),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#b58cff", width: 2 },
+        name: "RSI",
+      }], {
+        ...chartLayout("RSI", "RSI", 190),
+        yaxis: { title: "RSI", gridcolor: "#28394c", range: [0, 100] },
+        shapes: [
+          { type: "line", xref: "paper", x0: 0, x1: 1, y0: 70, y1: 70, line: { color: "#ff6478", width: 1, dash: "dot" } },
+          { type: "line", xref: "paper", x0: 0, x1: 1, y0: 30, y1: 30, line: { color: "#24d18f", width: 1, dash: "dot" } },
+        ],
+      }, quietConfig).then(() => bindChartSync("rsiChart"));
+
+      const atr = chartData.atr || [];
+      Plotly.react("atrChart", [{
+        x: atr.map((r) => new Date(Number(r.time) * 1000)),
+        y: atr.map((r) => r.value),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#45d8d2", width: 2 },
+        fill: "tozeroy",
+        fillcolor: "rgba(69,216,210,.12)",
+        name: "ATR",
+      }], chartLayout("ATR", "ATR", 190), quietConfig).then(() => bindChartSync("atrChart"));
+
+      const fg = chartData.fear_greed || [];
+      Plotly.react("fearGreedChart", [{
+        x: fg.map((r) => new Date(Number(r.time) * 1000)),
+        y: fg.map((r) => r.value),
+        text: fg.map((r) => r.label || ""),
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#f4bf55", width: 2 },
+        fill: "tozeroy",
+        fillcolor: "rgba(244,191,85,.12)",
+        name: "Fear & Greed",
+        hovertemplate: "%{x|%Y-%m-%d}<br>F&G: %{y:.0f}<br>%{text}<extra></extra>",
+      }], {
+        ...chartLayout("歷史 Fear & Greed", "0-100", 240),
+        uirevision: "fear-greed-full-history",
+        xaxis: { gridcolor: "#28394c", zerolinecolor: "#28394c", autorange: true },
+        yaxis: { title: "0-100", gridcolor: "#28394c", range: [0, 100] },
+      }, quietConfig);
+
+      Promise.all(ids.map((id) => document.getElementById(id)?._fullLayout ? Promise.resolve() : Promise.resolve()))
+        .finally(() => window.setTimeout(() => setChartsUpdating(false), 180));
+    }
+
+    function renderOkx() {
+      const s = state.okx || {};
+      const canSend = Boolean(s.configured && s.live_enabled && (s.demo || s.real_env_trading_allowed));
+      const label = s.configured
+        ? `OKX ${s.demo ? "模擬盤" : "目前連線環境"} ${canSend ? "真送單已開" : "安全鎖定"}`
+        : "OKX key 尚未設定";
+      $("okxStatus").innerHTML = `<i data-lucide="${canSend ? "shield-check" : "shield-alert"}" size="16"></i> ${label}`;
+      $("adapterMode").textContent = canSend
+        ? (s.demo ? "模擬盤真送單" : "目前環境真送單")
+        : s.demo
+          ? "模擬盤 dry-run"
+          : "正式環境已阻擋";
+      if (state.account?.error) $("accountState").textContent = "無法讀取";
+      else if (state.account?.balances) $("accountState").textContent = "已載入";
+      else $("accountState").textContent = s.configured ? "已設定" : "缺少 key";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function todayKey() {
+      return new Date().toLocaleDateString("en-CA");
+    }
+
+    function saveEquitySnapshots() {
+      localStorage.setItem(EQUITY_KEY, JSON.stringify(state.equitySnapshots.slice(-730)));
+      saveServerState({ equitySnapshots: state.equitySnapshots.slice(-730) });
+    }
+
+    function recordDailyEquitySnapshot() {
+      const equity = getAccountEquity();
+      if (!finite(equity) || equity <= 0) return;
+      const usdt = getAvailableUsdt();
+      const key = todayKey();
+      const existing = state.equitySnapshots.find((row) => row.date === key);
+      const payload = {
+        date: key,
+        ts: Date.now(),
+        equity,
+        usdtAvailable: finite(usdt) ? usdt : null,
+        demo: Boolean(state.okx?.demo),
+      };
+      if (existing) Object.assign(existing, payload);
+      else state.equitySnapshots.push(payload);
+      state.equitySnapshots.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      saveEquitySnapshots();
+    }
+
+    function renderEquityChart() {
+      const rows = state.equitySnapshots || [];
+      $("equityCount").textContent = `${rows.length} days`;
+      Plotly.react("equityChart", [{
+        x: rows.map((row) => row.date),
+        y: rows.map((row) => row.equity),
+        type: "scatter",
+        mode: "lines+markers",
+        line: { color: "#24d18f", width: 2 },
+        marker: { color: "#24d18f", size: 5 },
+        fill: "tozeroy",
+        fillcolor: "rgba(36,209,143,.10)",
+        text: rows.map((row) => finite(row.usdtAvailable) ? `USDT 可用 ${money(row.usdtAvailable)}` : ""),
+        hovertemplate: "%{x}<br>總資產: $%{y:,.2f}<br>%{text}<extra></extra>",
+      }], {
+        title: { text: "每日總資產", font: { color: "#edf5ff", size: 14 } },
+        paper_bgcolor: "#111b26",
+        plot_bgcolor: "#111b26",
+        font: { color: "#edf5ff" },
+        margin: { l: 54, r: 14, t: 42, b: 34 },
+        height: 220,
+        uirevision: "daily-equity",
+        xaxis: { gridcolor: "#28394c", zerolinecolor: "#28394c", type: "date" },
+        yaxis: { title: "USD", gridcolor: "#28394c", zerolinecolor: "#28394c" },
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    function saveTradeRecords() {
+      localStorage.setItem(RECORD_KEY, JSON.stringify(state.tradeRecords.slice(0, 500)));
+      saveServerState({ tradeRecords: state.tradeRecords.slice(0, 500) });
+    }
+
+    function addTradeRecord(record) {
+      state.tradeRecords.unshift({
+        id: record.id || crypto.randomUUID(),
+        ts: record.ts || Date.now(),
+        env: state.okx?.demo ? "模擬盤" : "目前環境",
+        ...record,
+      });
+      state.tradeRecords = state.tradeRecords.slice(0, 500);
+      saveTradeRecords();
+      renderTradeRecords();
+    }
+
+    function renderTradeRecords() {
+      $("tradeRecordCount").textContent = `${state.tradeRecords.length} records`;
+      if (!state.tradeRecords.length) {
+        $("tradeRecords").innerHTML = `<div class="empty">尚無交易紀錄</div>`;
+        return;
+      }
+      $("tradeRecords").innerHTML = state.tradeRecords.slice(0, 16).map((r) => {
+        const sideClass = r.side === "buy" ? "green" : "red";
+        const when = new Date(r.ts).toLocaleString();
+        const meta = Object.values(SYMBOLS).find((item) => item.okxInst === r.instId || item.pair === r.pair) || symbolMeta();
+        return `
+          <div class="record-card">
+            <div class="record-top">
+              <strong>${r.instId || r.pair || "-"}</strong>
+              <span class="${sideClass}">${String(r.side || "").toUpperCase()} ${r.status || r.source || ""}</span>
+            </div>
+            <div class="record-grid">
+              <span>${when}</span>
+              <span>本金 ${money(r.principal)}</span>
+              <span>${r.env || "-"}</span>
+            </div>
+            <div class="record-grid">
+              <span>數量 ${fmt(r.qty, meta.qtyDp)}</span>
+              <span>${r.ordType || r.type || "market"}</span>
+              <span>${r.orderId ? `ID ${r.orderId}` : r.message || ""}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function activePositions() {
+      const rows = state.account?.positions?.data || [];
+      return rows.filter((row) => Math.abs(num(row.pos)) > 0);
+    }
+
+    function renderPositions() {
+      const rows = activePositions();
+      $("positionCount").textContent = `${rows.length} pos`;
+      if (!rows.length) {
+        $("okxPositions").innerHTML = `<div class="empty">目前沒有 OKX 持倉</div>`;
+        return;
+      }
+      $("okxPositions").innerHTML = rows.map((p) => {
+        const pnl = num(p.upl);
+        const side = String(p.posSide || p.pos || "").toLowerCase();
+        const sideClass = side.includes("short") || num(p.pos) < 0 ? "red" : "green";
+        return `
+          <div class="record-card">
+            <div class="record-top">
+              <strong>${p.instId}</strong>
+              <span class="${sideClass}">${p.posSide || p.pos}</span>
+            </div>
+            <div class="record-grid">
+              <span>張數 ${fmt(p.pos, 4)}</span>
+              <span>均價 ${fmt(p.avgPx, 4)}</span>
+              <span class="${pnl >= 0 ? "green" : "red"}">PnL ${money(pnl)}</span>
+            </div>
+            <div class="button-grid">
+              <button type="button" data-close-position="${encodeURIComponent(JSON.stringify({
+                instId: p.instId,
+                mgnMode: p.mgnMode || "cross",
+                posSide: p.posSide || "",
+                autoCxl: true,
+              }))}">一鍵平倉</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      document.querySelectorAll("[data-close-position]").forEach((btn) => {
+        btn.addEventListener("click", () => closeOkxPosition(JSON.parse(decodeURIComponent(btn.dataset.closePosition))));
+      });
+    }
+
+    function renderPendingOrders() {
+      const rows = state.pendingOrders || [];
+      $("pendingOrderCount").textContent = `${rows.length} orders`;
+      if (!rows.length) {
+        $("okxPendingOrders").innerHTML = `<div class="empty">目前沒有未成交委託</div>`;
+        return;
+      }
+      $("okxPendingOrders").innerHTML = rows.slice(0, 20).map((o) => `
+        <div class="record-card">
+          <div class="record-top">
+            <strong>${o.instId}</strong>
+            <span class="${o.side === "buy" ? "green" : "red"}">${String(o.side || "").toUpperCase()} ${o.state || ""}</span>
+          </div>
+          <div class="record-grid">
+            <span>${o.ordType || "-"}</span>
+            <span>價 ${fmt(o.px, 4)}</span>
+            <span>量 ${fmt(o.sz, 4)}</span>
+          </div>
+          <div class="button-grid">
+            <button type="button" data-cancel-order="${encodeURIComponent(JSON.stringify({
+              instId: o.instId,
+              ordId: o.ordId || "",
+              clOrdId: o.clOrdId || "",
+            }))}">撤單</button>
+          </div>
+        </div>
+      `).join("");
+      document.querySelectorAll("[data-cancel-order]").forEach((btn) => {
+        btn.addEventListener("click", () => cancelOkxOrder(JSON.parse(decodeURIComponent(btn.dataset.cancelOrder))));
+      });
+    }
+
+    function renderOrders() {
+      $("orderCount").textContent = `${state.orders.length} orders`;
+      if (!state.orders.length) {
+        $("positions").innerHTML = `<div class="empty">目前沒有紙上倉位</div>`;
+        return;
+      }
+      $("positions").innerHTML = state.orders.slice(0, 10).map((o) => {
+        const live = state.data[o.symbol]?.latest?.price;
+        const openPnl = finite(live) && o.status === "open"
+          ? (Number(live) - o.entry) * o.qty * (o.side === "buy" ? 1 : -1)
+          : Number(o.realizedPnl || 0);
+        return `
+          <div class="order-card">
+            <div class="order-top">
+              <strong>${o.pair}</strong>
+              <span class="${o.side === "buy" ? "green" : "red"}">${o.side.toUpperCase()} ${o.status}</span>
+            </div>
+            <div class="order-grid">
+              <span>本金 ${money(o.principal || (o.qty * o.entry))}</span>
+              <span>entry ${fmt(o.entry, SYMBOLS[o.symbol].dp)}</span>
+              <span class="${openPnl >= 0 ? "green" : "red"}">PnL ${money(openPnl)}</span>
+            </div>
+            <div class="order-grid">
+              <span>數量 ${fmt(o.qty, SYMBOLS[o.symbol].qtyDp)}</span>
+              <span>lev ${fmt(o.leverage, 2)}x</span>
+              <span>SL ${fmt(o.stop, SYMBOLS[o.symbol].dp)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function render() {
+      const data = currentData();
+      const signal = computeSignal(data);
+      const style = classifyStyle(data, signal);
+      const block = riskBlock(data, signal);
+      const lev = suggestedLeverage(data, signal, style);
+      renderTop(data, signal, style, lev, block);
+      renderTicket(data, signal, style, lev, block);
+      renderRisk(data, signal, style);
+      drawCharts(data, signal);
+      renderOrders();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function saveOrders() {
+      localStorage.setItem("paperOrders.v2", JSON.stringify(state.orders.slice(0, 200)));
+    }
+
+    function saveServerState(patch) {
+      fetch(SERVER_STATE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      }).catch(() => {});
+    }
+
+    async function loadServerTradingState() {
+      try {
+        const res = await fetch(SERVER_STATE_URL, { cache: "no-store" });
+        const payload = await res.json();
+        if (!payload?.ok) return;
+        if (payload.prefs && Object.keys(payload.prefs).length) {
+          savedPrefs = { ...savedPrefs, ...payload.prefs };
+        }
+        if (Array.isArray(payload.equitySnapshots)) {
+          state.equitySnapshots = payload.equitySnapshots;
+          localStorage.setItem(EQUITY_KEY, JSON.stringify(state.equitySnapshots));
+        }
+        if (Array.isArray(payload.tradeRecords)) {
+          state.tradeRecords = payload.tradeRecords;
+          localStorage.setItem(RECORD_KEY, JSON.stringify(state.tradeRecords));
+        }
+      } catch {
+        saveServerState({
+          prefs: savedPrefs,
+          equitySnapshots: state.equitySnapshots,
+          tradeRecords: state.tradeRecords,
+        });
+      }
+    }
+
+    function savePrefs() {
+      const prefs = {
+        symbol: state.symbol,
+        side: state.side,
+        orderType: state.orderType,
+        risk: state.risk,
+        principal: $("principal").value,
+        aiCapital: $("aiCapital").value,
+        maxLev: $("maxLev").value,
+        limitPrice: $("limitPrice").value,
+        reserve: $("reserve").value,
+        slPct: $("slPct").value,
+        tpPct: $("tpPct").value,
+      };
+      localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+      localStorage.setItem("tradeRiskProfile", state.risk);
+      saveServerState({ prefs });
+    }
+
+    function restorePrefs() {
+      const fieldDefaults = {
+        principal: SYMBOLS[state.symbol].defaultPrincipal,
+        aiCapital: SYMBOLS[state.symbol].defaultPrincipal,
+        maxLev: "10",
+        limitPrice: "",
+        reserve: "0",
+        slPct: "1.0",
+        tpPct: "1.5",
+      };
+      Object.entries(fieldDefaults).forEach(([id, fallback]) => {
+        $(id).value = savedPrefs[id] ?? fallback;
+      });
+      setSymbol(state.symbol, { keepAmounts: true });
+      setSide(state.side);
+      document.querySelectorAll("[data-risk]").forEach((b) => b.classList.toggle("active", b.dataset.risk === state.risk));
+      document.querySelectorAll("[data-order-type]").forEach((b) => b.classList.toggle("active", b.dataset.orderType === state.orderType));
+    }
+
+    function submitPaper(auto = false) {
+      const data = currentData();
+      const signal = computeSignal(data);
+      const style = classifyStyle(data, signal);
+      const block = riskBlock(data, signal);
+      if (auto && (block !== "none" || signal.signal === "觀望")) {
+        $("safetyNote").textContent = `Auto paper skipped: ${block === "none" ? "沒有方向訊號" : block}.`;
+        return;
+      }
+      const entry = getEntry();
+      const principal = getEffectivePrincipal({ aiCapped: auto });
+      const qty = getBaseQty(entry, principal);
+      if (!finite(entry) || !finite(qty) || qty <= 0) {
+        $("safetyNote").textContent = "下單被拒：價格或本金無效。";
+        return;
+      }
+      const lev = suggestedLeverage(data, signal, style);
+      const slPct = Math.max(0, num($("slPct").value) || 0) / 100;
+      const tpPct = Math.max(0, num($("tpPct").value) || 0) / 100;
+      const side = auto ? (signal.signal === "看跌" ? "sell" : "buy") : state.side;
+      const order = {
+        id: crypto.randomUUID(),
+        ts: Date.now(),
+        symbol: state.symbol,
+        pair: SYMBOLS[state.symbol].pair,
+        side,
+        type: state.orderType,
+        qty,
+        principal,
+        entry,
+        leverage: lev,
+        stop: side === "buy" ? entry * (1 - slPct) : entry * (1 + slPct),
+        take: side === "buy" ? entry * (1 + tpPct) : entry * (1 - tpPct),
+        status: "open",
+        signal: signal.signal,
+        confidence: signal.confidence,
+      };
+      state.orders.unshift(order);
+      saveOrders();
+      addTradeRecord({
+        source: auto ? "AI 紙上單" : "紙上單",
+        status: "open",
+        pair: order.pair,
+        side: order.side,
+        type: order.type,
+        qty: order.qty,
+        principal: order.principal,
+        message: order.signal,
+      });
+      render();
+      $("safetyNote").textContent = auto ? `已依目前 AI 訊號建立紙上單，本金 ${money(principal)}。` : "已建立本機紙上單。";
+    }
+
+    function buildOkxOrder({ aiCapped = false } = {}) {
+      const meta = symbolMeta();
+      const entry = getEntry();
+      const principal = getEffectivePrincipal({ aiCapped });
+      const qty = getBaseQty(entry, principal);
+      const payload = {
+        instId: meta.okxInst,
+        tdMode: "cross",
+        side: state.side,
+        ordType: state.orderType,
+        sz: String(qty),
+        clOrdId: `ait${Date.now()}`.slice(0, 32),
+        principal,
+      };
+      if (state.orderType !== "market") payload.px = String(entry);
+      return payload;
+    }
+
+    async function submitOkxDryRun() {
+      try {
+        const order = buildOkxOrder();
+        if (!finite(order.sz) || Number(order.sz) <= 0) throw new Error("invalid size");
+        const res = await fetch("/api/okx/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order, confirm: "DRY RUN" }),
+        });
+        const data = await res.json();
+        const msg = data.error ? `OKX 錯誤：${data.error}` : `Dry-run payload 已建立：${JSON.stringify(data.payload)}`;
+        $("okxLast").textContent = msg.slice(0, 110);
+        $("safetyNote").textContent = msg;
+      } catch (err) {
+        $("okxLast").textContent = err.message;
+        $("safetyNote").textContent = `OKX 本機錯誤：${err.message}`;
+      }
+    }
+
+    async function submitOkxLive() {
+      try {
+        await loadOkxStatus();
+        await loadAccount();
+        if (!state.okx?.configured) throw new Error("OKX API key 尚未設定。");
+        if (!state.okx?.live_enabled) {
+          throw new Error("尚未開啟真送單。請在 .env 設 OKX_ENABLE_LIVE_TRADING=1，並重開 dashboard。");
+        }
+        if (!state.okx?.demo && !state.okx?.real_env_trading_allowed) {
+          throw new Error("目前 OKX_DEMO=0，而且正式環境送單保險絲未開。");
+        }
+        const order = buildOkxOrder({ aiCapped: true });
+        if (!finite(order.sz) || Number(order.sz) <= 0) throw new Error("invalid size");
+        const res = await fetch("/api/okx/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order, confirm: "OKX LIVE" }),
+        });
+        const data = await res.json();
+        const resultText = data.blocked
+          ? `已阻擋：${data.message || "安全鎖啟動"}`
+          : data.error
+            ? `OKX 錯誤：${data.error}`
+            : data.dry_run
+              ? `仍是 dry-run：${data.message || "尚未真的送出"}`
+              : `已送到 OKX ${state.okx?.demo ? "模擬盤" : "目前連線環境"}：${JSON.stringify(data.result)}`;
+        if (!data.error && !data.blocked && !data.dry_run) {
+          const resultRow = data.result?.data?.[0] || {};
+          addTradeRecord({
+            source: "OKX",
+            status: "sent",
+            instId: order.instId,
+            side: order.side,
+            ordType: order.ordType,
+            qty: Number(order.sz),
+            principal: order.principal,
+            orderId: resultRow.ordId || resultRow.clOrdId || order.clOrdId,
+            message: data.result?.msg || "",
+          });
+        }
+        $("okxLast").textContent = resultText.slice(0, 110);
+        $("safetyNote").textContent = `${resultText} | AI 使用本金 ${money(order.principal)}`;
+      } catch (err) {
+        $("okxLast").textContent = err.message;
+        $("safetyNote").textContent = `OKX 模擬盤送單未執行：${err.message}`;
+      }
+    }
+
+    async function cancelOkxOrder(order) {
+      try {
+        const res = await fetch("/api/okx/cancel-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order, confirm: "OKX LIVE" }),
+        });
+        const data = await res.json();
+        const resultText = data.error
+          ? `撤單錯誤：${data.error}`
+          : data.blocked
+            ? `撤單已阻擋：${data.message || "安全鎖啟動"}`
+            : `撤單完成：${JSON.stringify(data.result)}`;
+        $("okxLast").textContent = resultText.slice(0, 110);
+        $("safetyNote").textContent = resultText;
+        addTradeRecord({
+          source: "OKX 撤單",
+          status: data.error || data.blocked ? "blocked" : "sent",
+          instId: order.instId,
+          side: "cancel",
+          principal: 0,
+          qty: 0,
+          orderId: order.ordId || order.clOrdId,
+          message: data.error || data.message || "",
+        });
+        await loadPendingOrders();
+      } catch (err) {
+        $("okxLast").textContent = err.message;
+        $("safetyNote").textContent = `撤單失敗：${err.message}`;
+      }
+    }
+
+    async function closeOkxPosition(position) {
+      try {
+        const res = await fetch("/api/okx/close-position", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ position, confirm: "OKX LIVE" }),
+        });
+        const data = await res.json();
+        const resultText = data.error
+          ? `平倉錯誤：${data.error}`
+          : data.blocked
+            ? `平倉已阻擋：${data.message || "安全鎖啟動"}`
+            : `平倉送出：${JSON.stringify(data.result)}`;
+        $("okxLast").textContent = resultText.slice(0, 110);
+        $("safetyNote").textContent = resultText;
+        addTradeRecord({
+          source: "OKX 平倉",
+          status: data.error || data.blocked ? "blocked" : "sent",
+          instId: position.instId,
+          side: "close",
+          principal: 0,
+          qty: 0,
+          orderId: data.result?.data?.[0]?.ordId || "",
+          message: data.error || data.message || "",
+        });
+        await loadAccount();
+        await loadPendingOrders();
+      } catch (err) {
+        $("okxLast").textContent = err.message;
+        $("safetyNote").textContent = `平倉失敗：${err.message}`;
+      }
+    }
+
+    function bind() {
+      $("symbolBTC").addEventListener("click", () => setSymbol("BTC"));
+      $("symbolADA").addEventListener("click", () => setSymbol("ADA"));
+      $("sideBuy").addEventListener("click", () => setSide("buy"));
+      $("sideSell").addEventListener("click", () => setSide("sell"));
+      document.querySelectorAll("[data-risk]").forEach((btn) => btn.addEventListener("click", () => {
+        state.risk = btn.dataset.risk;
+        document.querySelectorAll("[data-risk]").forEach((b) => b.classList.toggle("active", b.dataset.risk === state.risk));
+        savePrefs();
+        render();
+      }));
+      document.querySelectorAll("[data-order-type]").forEach((btn) => btn.addEventListener("click", () => {
+        state.orderType = btn.dataset.orderType;
+        document.querySelectorAll("[data-order-type]").forEach((b) => b.classList.toggle("active", b.dataset.orderType === state.orderType));
+        savePrefs();
+        render();
+      }));
+      ["principal", "aiCapital", "maxLev", "limitPrice", "reserve", "slPct", "tpPct"].forEach((id) => $(id).addEventListener("input", () => {
+        savePrefs();
+        render();
+      }));
+      $("paperSubmit").addEventListener("click", () => submitPaper(false));
+      $("autoPaper").addEventListener("click", () => submitPaper(true));
+      $("okxDryRun").addEventListener("click", submitOkxDryRun);
+      $("okxLive").addEventListener("click", submitOkxLive);
+      $("clearOrders").addEventListener("click", () => {
+        state.orders = [];
+        saveOrders();
+        render();
+      });
+    }
+
+    function setSymbol(symbol, options = {}) {
+      state.symbol = symbol;
+      $("symbolBTC").classList.toggle("active", symbol === "BTC");
+      $("symbolADA").classList.toggle("active", symbol === "ADA");
+      if (!options.keepAmounts) {
+        $("principal").value = SYMBOLS[symbol].defaultPrincipal;
+        $("aiCapital").value = SYMBOLS[symbol].defaultPrincipal;
+      }
+      savePrefs();
+      render();
+    }
+
+    function setSide(side) {
+      state.side = side;
+      $("sideBuy").classList.toggle("active", side === "buy");
+      $("sideSell").classList.toggle("active", side === "sell");
+      savePrefs();
+      render();
+    }
+
+    async function tick() {
+      await Promise.all([
+        loadSignal("BTC"),
+        loadSignal("ADA"),
+        loadIndicators("BTC"),
+        loadIndicators("ADA"),
+      ]);
+      render();
+    }
+
+    async function boot() {
+      await loadServerTradingState();
+      bind();
+      restorePrefs();
+      renderOrders();
+      renderTradeRecords();
+      renderEquityChart();
+      tick();
+      loadOkxStatus();
+      loadAccount();
+      loadPendingOrders();
+    }
+
+    boot();
+    setInterval(tick, 1200);
+    setInterval(loadOkxStatus, 5000);
+    setInterval(loadAccount, 30000);
+    setInterval(loadPendingOrders, 5000);
+    setInterval(renderOrders, 1000);
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>
+
+
