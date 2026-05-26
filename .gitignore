@@ -15,6 +15,7 @@ __pycache__/
 *.db-wal
 *.db-shm
 data/parquet/
+data/parquet_rollup/
 harvesters/*_harvester/raw_db/
 harvesters/*_harvester/logs/
 

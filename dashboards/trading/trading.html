@@ -284,6 +284,12 @@
       background: rgba(255, 100, 120, .12);
     }
 
+    .auto-active {
+      color: var(--cyan);
+      border-color: rgba(69, 216, 210, .54);
+      background: rgba(69, 216, 210, .12);
+    }
+
     .summary {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -411,7 +417,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr) minmax(0, auto);
       align-items: center;
       gap: 10px;
       color: var(--muted);
@@ -422,6 +428,15 @@
       color: var(--text);
       font-family: var(--mono);
       text-align: right;
+      min-width: 0;
+    }
+
+    #okxLast {
+      display: block;
+      max-width: min(360px, 42vw);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .order-list {
@@ -567,8 +582,8 @@
         </div>
         <div class="body">
           <div class="segmented">
-            <button id="sideBuy" class="buy active" type="button"><i data-lucide="arrow-up" size="16"></i> 買入</button>
-            <button id="sideSell" class="sell" type="button"><i data-lucide="arrow-down" size="16"></i> 賣出</button>
+            <button id="sideBuy" class="buy active" type="button"><i data-lucide="arrow-up" size="16"></i> 買入 / 做多</button>
+            <button id="sideSell" class="sell" type="button"><i data-lucide="arrow-down" size="16"></i> 賣出 / 做空</button>
           </div>
           <div class="segmented three">
             <button data-order-type="market" class="active" type="button">市價</button>
@@ -609,9 +624,11 @@
             <button id="okxDryRun" type="button"><i data-lucide="plug-zap" size="16"></i> OKX Dry Run</button>
             <button id="okxLive" type="button"><i data-lucide="radio-tower" size="16"></i> 送模擬盤</button>
             <button id="autoPaper" type="button"><i data-lucide="bot" size="16"></i> AI 紙上單一次</button>
+            <button id="aiOkxLive" type="button"><i data-lucide="bot" size="16"></i> AI 送模擬盤一次</button>
+            <button id="aiOkxAuto" type="button"><i data-lucide="repeat" size="16"></i> AI 連續送單：關</button>
             <button id="clearOrders" type="button"><i data-lucide="trash-2" size="16"></i> 清除</button>
           </div>
-          <div class="notice" id="safetyNote">真實送單目前鎖定。OKX 只會 dry-run，除非你明確打開本機風控開關與 server 確認。</div>
+          <div class="notice" id="safetyNote">OKX 目前使用模擬盤。買入會送 posSide=long，賣出會送 posSide=short。</div>
         </div>
       </section>
 
@@ -708,8 +725,8 @@
 
   <script>
     const SYMBOLS = {
-      BTC: { pair: "BTCUSDT", okxInst: "BTC-USDT-SWAP", dp: 2, qtyDp: 6, defaultPrincipal: "50" },
-      ADA: { pair: "ADAUSDT", okxInst: "ADA-USDT-SWAP", dp: 4, qtyDp: 2, defaultPrincipal: "50" },
+      BTC: { pair: "BTCUSDT", okxInst: "BTC-USDT-SWAP", dp: 2, qtyDp: 6, contractDp: 2, contractValue: 0.01, lotSz: 0.01, minSz: 0.01, defaultPrincipal: "50" },
+      ADA: { pair: "ADAUSDT", okxInst: "ADA-USDT-SWAP", dp: 4, qtyDp: 2, contractDp: 1, contractValue: 100, lotSz: 0.1, minSz: 0.1, defaultPrincipal: "50" },
     };
 
     const RISK = {
@@ -749,6 +766,9 @@
       equitySnapshots: loadJson(EQUITY_KEY, []),
       chartRange: JSON.parse(localStorage.getItem("tradingChartRange.v1") || "null"),
       applyingChartRange: false,
+      aiAutoEnabled: savedPrefs.aiAutoEnabled === true,
+      aiAutoBusy: false,
+      aiAutoLastActionAt: 0,
     };
 
     const $ = (id) => document.getElementById(id);
@@ -845,6 +865,39 @@
       return finite(principal) && principal > 0 && finite(entry) && entry > 0
         ? principal / entry
         : NaN;
+    }
+
+    function okxPosSide(side = state.side) {
+      return side === "sell" ? "short" : "long";
+    }
+
+    function roundDownStep(value, step) {
+      if (!finite(value) || !finite(step) || step <= 0) return NaN;
+      const precision = Math.max(0, String(step).split(".")[1]?.length || 0);
+      const scaled = Math.floor((Number(value) / Number(step)) + 1e-10) * Number(step);
+      return Number(scaled.toFixed(precision));
+    }
+
+    function getOkxContractSize(entry = getEntry(), principal = getPrincipal()) {
+      const meta = symbolMeta();
+      if (!finite(principal) || principal <= 0 || !finite(entry) || entry <= 0) return NaN;
+      const rawContracts = principal / (entry * meta.contractValue);
+      const stepped = roundDownStep(rawContracts, meta.lotSz);
+      return Math.max(meta.minSz, stepped);
+    }
+
+    function getOkxNotionalFromContracts(contracts, entry = getEntry()) {
+      const meta = symbolMeta();
+      return finite(contracts) && finite(entry) ? Number(contracts) * meta.contractValue * Number(entry) : NaN;
+    }
+
+    function okxResultRow(result) {
+      return result?.data?.[0] || {};
+    }
+
+    function okxShortId(row, fallback = "") {
+      const id = row?.ordId || row?.clOrdId || fallback || "";
+      return id ? String(id).slice(-8) : "-";
     }
 
     function flowScore(data) {
@@ -1342,6 +1395,11 @@
       return rows.filter((row) => Math.abs(num(row.pos)) > 0);
     }
 
+    function activePositionsForInst(instId) {
+      const target = String(instId || "").toUpperCase();
+      return activePositions().filter((row) => String(row.instId || "").toUpperCase() === target);
+    }
+
     function renderPositions() {
       const rows = activePositions();
       $("positionCount").textContent = `${rows.length} pos`;
@@ -1508,6 +1566,7 @@
         reserve: $("reserve").value,
         slPct: $("slPct").value,
         tpPct: $("tpPct").value,
+        aiAutoEnabled: state.aiAutoEnabled,
       };
       localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
       localStorage.setItem("tradeRiskProfile", state.risk);
@@ -1515,6 +1574,11 @@
     }
 
     function restorePrefs() {
+      state.symbol = savedPrefs.symbol || state.symbol;
+      state.side = savedPrefs.side || state.side;
+      state.orderType = savedPrefs.orderType || state.orderType;
+      state.risk = savedPrefs.risk || state.risk;
+      state.aiAutoEnabled = savedPrefs.aiAutoEnabled === true;
       const fieldDefaults = {
         principal: SYMBOLS[state.symbol].defaultPrincipal,
         aiCapital: SYMBOLS[state.symbol].defaultPrincipal,
@@ -1531,6 +1595,7 @@
       setSide(state.side);
       document.querySelectorAll("[data-risk]").forEach((b) => b.classList.toggle("active", b.dataset.risk === state.risk));
       document.querySelectorAll("[data-order-type]").forEach((b) => b.classList.toggle("active", b.dataset.orderType === state.orderType));
+      updateAiAutoButton();
     }
 
     function submitPaper(auto = false) {
@@ -1586,19 +1651,23 @@
       $("safetyNote").textContent = auto ? `已依目前 AI 訊號建立紙上單，本金 ${money(principal)}。` : "已建立本機紙上單。";
     }
 
-    function buildOkxOrder({ aiCapped = false } = {}) {
+    function buildOkxOrder({ aiCapped = false, sideOverride = null } = {}) {
       const meta = symbolMeta();
       const entry = getEntry();
       const principal = getEffectivePrincipal({ aiCapped });
-      const qty = getBaseQty(entry, principal);
+      const contracts = getOkxContractSize(entry, principal);
+      const estimatedNotional = getOkxNotionalFromContracts(contracts, entry);
+      const side = sideOverride || state.side;
       const payload = {
         instId: meta.okxInst,
         tdMode: "cross",
-        side: state.side,
+        side,
+        posSide: okxPosSide(side),
         ordType: state.orderType,
-        sz: String(qty),
+        sz: String(contracts),
         clOrdId: `ait${Date.now()}`.slice(0, 32),
         principal,
+        estimatedNotional,
       };
       if (state.orderType !== "market") payload.px = String(entry);
       return payload;
@@ -1614,17 +1683,30 @@
           body: JSON.stringify({ order, confirm: "DRY RUN" }),
         });
         const data = await res.json();
-        const msg = data.error ? `OKX 錯誤：${data.error}` : `Dry-run payload 已建立：${JSON.stringify(data.payload)}`;
+        const payload = data.payload || order;
+        const msg = data.error
+          ? `OKX 錯誤：${data.error}`
+          : `Dry-run：${payload.instId} ${payload.side}/${payload.posSide || "-"} ${payload.ordType} ${payload.sz} 張`;
         $("okxLast").textContent = msg.slice(0, 110);
-        $("safetyNote").textContent = msg;
+        $("safetyNote").textContent = `${msg}，本金 ${money(payload.principal || order.principal)}，估計名目 ${money(payload.estimatedNotional || order.estimatedNotional)}。`;
       } catch (err) {
         $("okxLast").textContent = err.message;
         $("safetyNote").textContent = `OKX 本機錯誤：${err.message}`;
       }
     }
 
-    async function submitOkxLive() {
+    async function submitOkxLive(options = {}) {
       try {
+        const ai = Boolean(options.ai);
+        const dataNow = currentData();
+        const signal = computeSignal(dataNow);
+        const block = riskBlock(dataNow, signal);
+        let sideOverride = null;
+        if (ai) {
+          if (signal.signal === "觀望") throw new Error("AI 目前是觀望，不送模擬盤。");
+          if (block !== "none") throw new Error(`AI 模擬盤送單被風控阻擋：${block}`);
+          sideOverride = signal.signal === "看跌" ? "sell" : "buy";
+        }
         await loadOkxStatus();
         await loadAccount();
         if (!state.okx?.configured) throw new Error("OKX API key 尚未設定。");
@@ -1634,7 +1716,7 @@
         if (!state.okx?.demo && !state.okx?.real_env_trading_allowed) {
           throw new Error("目前 OKX_DEMO=0，而且正式環境送單保險絲未開。");
         }
-        const order = buildOkxOrder({ aiCapped: true });
+        const order = buildOkxOrder({ aiCapped: true, sideOverride });
         if (!finite(order.sz) || Number(order.sz) <= 0) throw new Error("invalid size");
         const res = await fetch("/api/okx/order", {
           method: "POST",
@@ -1642,29 +1724,32 @@
           body: JSON.stringify({ order, confirm: "OKX LIVE" }),
         });
         const data = await res.json();
+        const resultRow = okxResultRow(data.result);
         const resultText = data.blocked
           ? `已阻擋：${data.message || "安全鎖啟動"}`
           : data.error
             ? `OKX 錯誤：${data.error}`
             : data.dry_run
               ? `仍是 dry-run：${data.message || "尚未真的送出"}`
-              : `已送到 OKX ${state.okx?.demo ? "模擬盤" : "目前連線環境"}：${JSON.stringify(data.result)}`;
+              : `已送到 OKX ${state.okx?.demo ? "模擬盤" : "目前連線環境"}：${order.instId} ${order.side}/${order.posSide} ${order.sz} 張，ID ${okxShortId(resultRow, order.clOrdId)}`;
         if (!data.error && !data.blocked && !data.dry_run) {
-          const resultRow = data.result?.data?.[0] || {};
           addTradeRecord({
-            source: "OKX",
+            source: ai ? "AI OKX" : "OKX",
             status: "sent",
             instId: order.instId,
             side: order.side,
+            posSide: order.posSide,
             ordType: order.ordType,
             qty: Number(order.sz),
             principal: order.principal,
             orderId: resultRow.ordId || resultRow.clOrdId || order.clOrdId,
-            message: data.result?.msg || "",
+            message: ai ? `${signal.signal} ${Math.round(signal.confidence * 100)}%` : (data.result?.msg || ""),
           });
         }
         $("okxLast").textContent = resultText.slice(0, 110);
-        $("safetyNote").textContent = `${resultText} | AI 使用本金 ${money(order.principal)}`;
+        $("safetyNote").textContent = `${ai ? "AI " : ""}${resultText} | 使用本金 ${money(order.principal)} | ${order.side}/${order.posSide} | ${order.sz} 張`;
+        await loadAccount();
+        await loadPendingOrders();
       } catch (err) {
         $("okxLast").textContent = err.message;
         $("safetyNote").textContent = `OKX 模擬盤送單未執行：${err.message}`;
@@ -1679,11 +1764,12 @@
           body: JSON.stringify({ order, confirm: "OKX LIVE" }),
         });
         const data = await res.json();
+        const resultRow = okxResultRow(data.result);
         const resultText = data.error
           ? `撤單錯誤：${data.error}`
           : data.blocked
             ? `撤單已阻擋：${data.message || "安全鎖啟動"}`
-            : `撤單完成：${JSON.stringify(data.result)}`;
+            : `撤單完成：${order.instId} ID ${okxShortId(resultRow, order.ordId || order.clOrdId)}`;
         $("okxLast").textContent = resultText.slice(0, 110);
         $("safetyNote").textContent = resultText;
         addTradeRecord({
@@ -1711,11 +1797,12 @@
           body: JSON.stringify({ position, confirm: "OKX LIVE" }),
         });
         const data = await res.json();
+        const resultRow = okxResultRow(data.result);
         const resultText = data.error
           ? `平倉錯誤：${data.error}`
           : data.blocked
             ? `平倉已阻擋：${data.message || "安全鎖啟動"}`
-            : `平倉送出：${JSON.stringify(data.result)}`;
+            : `平倉送出：${position.instId} ${position.posSide || ""}，ID ${okxShortId(resultRow)}`;
         $("okxLast").textContent = resultText.slice(0, 110);
         $("safetyNote").textContent = resultText;
         addTradeRecord({
@@ -1730,9 +1817,75 @@
         });
         await loadAccount();
         await loadPendingOrders();
+        return data;
       } catch (err) {
         $("okxLast").textContent = err.message;
         $("safetyNote").textContent = `平倉失敗：${err.message}`;
+        return { error: err.message };
+      }
+    }
+
+    function updateAiAutoButton() {
+      const btn = $("aiOkxAuto");
+      if (!btn) return;
+      btn.classList.toggle("auto-active", state.aiAutoEnabled);
+      btn.innerHTML = `<i data-lucide="repeat" size="16"></i> AI 連續送單：${state.aiAutoEnabled ? "開" : "關"}`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setAiAutoEnabled(enabled) {
+      state.aiAutoEnabled = Boolean(enabled);
+      savePrefs();
+      updateAiAutoButton();
+      $("safetyNote").textContent = state.aiAutoEnabled
+        ? "AI 連續送單已開啟：每 15 秒檢查一次。同方向會加碼；反向訊號會先平倉，下一輪才開反向倉。"
+        : "AI 連續送單已關閉。";
+    }
+
+    async function aiAutoTradeTick() {
+      if (!state.aiAutoEnabled || state.aiAutoBusy) return;
+      if (Date.now() - state.aiAutoLastActionAt < 12000) return;
+      state.aiAutoBusy = true;
+      try {
+        const dataNow = currentData();
+        const signal = computeSignal(dataNow);
+        const block = riskBlock(dataNow, signal);
+        if (signal.signal === "觀望") {
+          $("safetyNote").textContent = "AI 連續送單：目前觀望，不動作。";
+          return;
+        }
+        if (block !== "none") {
+          $("safetyNote").textContent = `AI 連續送單：風控阻擋 ${block}，不動作。`;
+          return;
+        }
+
+        await loadOkxStatus();
+        await loadAccount();
+        const desiredSide = signal.signal === "看跌" ? "sell" : "buy";
+        const desiredPosSide = okxPosSide(desiredSide);
+        const meta = symbolMeta();
+        const positions = activePositionsForInst(meta.okxInst);
+        const opposite = positions.find((p) => {
+          const posSide = String(p.posSide || "").toLowerCase();
+          return posSide && posSide !== desiredPosSide;
+        });
+
+        state.aiAutoLastActionAt = Date.now();
+        if (opposite) {
+          const result = await closeOkxPosition({
+            instId: opposite.instId,
+            mgnMode: opposite.mgnMode || "cross",
+            posSide: opposite.posSide || "",
+            autoCxl: true,
+          });
+          if (result?.error || result?.blocked) return;
+          $("safetyNote").textContent = `AI 連續送單：偵測到反向 ${opposite.posSide} 倉位，已先送平倉；下一輪若訊號仍成立才開 ${desiredPosSide}。`;
+          return;
+        }
+
+        await submitOkxLive({ ai: true });
+      } finally {
+        state.aiAutoBusy = false;
       }
     }
 
@@ -1761,6 +1914,8 @@
       $("autoPaper").addEventListener("click", () => submitPaper(true));
       $("okxDryRun").addEventListener("click", submitOkxDryRun);
       $("okxLive").addEventListener("click", submitOkxLive);
+      $("aiOkxLive").addEventListener("click", () => submitOkxLive({ ai: true }));
+      $("aiOkxAuto").addEventListener("click", () => setAiAutoEnabled(!state.aiAutoEnabled));
       $("clearOrders").addEventListener("click", () => {
         state.orders = [];
         saveOrders();
@@ -1816,6 +1971,7 @@
     setInterval(loadOkxStatus, 5000);
     setInterval(loadAccount, 30000);
     setInterval(loadPendingOrders, 5000);
+    setInterval(aiAutoTradeTick, 15000);
     setInterval(renderOrders, 1000);
     if (window.lucide) lucide.createIcons();
   </script>

@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
-"""Export harvester SQLite DB tables to partitioned Parquet.
+"""Export harvester SQLite DB tables to Parquet.
 
 Reads DB in read-only mode, so it can run while harvesters are active.
 
-Output layout:
+Default partitioned layout:
     data/parquet/<COIN>/<table>/date=YYYY-MM-DD/part-db-*.parquet
+
+Rollup layout:
+    data/parquet/<COIN>/daily/<table>/date=YYYY-MM-DD/<table>_YYYY-MM-DD.parquet
+    data/parquet/<COIN>/monthly/<table>/month=YYYY-MM/<table>_YYYY-MM.parquet
+    data/parquet/<COIN>/quarterly/<table>/quarter=YYYY-QN/<table>_YYYY-QN.parquet
+    data/parquet/<COIN>/yearly/<table>/year=YYYY/<table>_YYYY.parquet
 
 Examples:
     python harvesters/db_to_parquet.py --symbol BTC
     python harvesters/db_to_parquet.py --symbol ADA --table trades
     python harvesters/db_to_parquet.py --symbol BTC --table orderbook_l1 --start-id 1000000
+    python harvesters/db_to_parquet.py --symbol BTC --layout rollup --periods day,month,quarter,year
 """
 from __future__ import annotations
 
 import argparse
+import re
 import sqlite3
 import sys
 import time
@@ -41,6 +49,13 @@ DEFAULT_TABLES = [
     "mark_price",
     "liquidations",
 ]
+
+PERIOD_DIRS = {
+    "day": ("daily", "date"),
+    "month": ("monthly", "month"),
+    "quarter": ("quarterly", "quarter"),
+    "year": ("yearly", "year"),
+}
 
 
 def project_root_from_script() -> Path:
@@ -95,6 +110,86 @@ def build_where(args: argparse.Namespace) -> tuple[str, list[object]]:
     return "WHERE " + " AND ".join(clauses), params
 
 
+def parse_periods(value: str) -> list[str]:
+    periods = [p.strip().lower() for p in value.split(",") if p.strip()]
+    invalid = [p for p in periods if p not in PERIOD_DIRS]
+    if invalid:
+        valid = ", ".join(PERIOD_DIRS)
+        raise argparse.ArgumentTypeError(f"invalid period(s): {', '.join(invalid)}. Valid: {valid}")
+    return periods or ["day"]
+
+
+def timestamp_to_period(series: pd.Series, unit: str, period: str) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    if unit == "auto":
+        finite = numeric.dropna()
+        if finite.empty:
+            unit = "ms"
+        else:
+            median = float(finite.abs().median())
+            unit = "ms" if median > 10_000_000_000 else "s"
+
+    ts = pd.to_datetime(numeric, unit=unit, utc=True, errors="coerce")
+    if period == "day":
+        return ts.dt.strftime("%Y-%m-%d")
+    if period == "month":
+        return ts.dt.strftime("%Y-%m")
+    if period == "quarter":
+        quarter = ((ts.dt.month - 1) // 3) + 1
+        return ts.dt.year.astype("Int64").astype("string") + "-Q" + quarter.astype("Int64").astype("string")
+    if period == "year":
+        return ts.dt.strftime("%Y")
+    raise ValueError(f"unsupported period: {period}")
+
+
+def safe_period_key(value: object) -> str:
+    if not isinstance(value, str) or value in {"NaT", "<NA>", "nan", "None", ""}:
+        return "unknown"
+    return re.sub(r"[^0-9A-Za-z._=-]+", "_", value)
+
+
+class RollupParquetWriters:
+    def __init__(self, *, out_root: Path, table: str, compression: str) -> None:
+        self.out_root = out_root
+        self.table = table
+        self.compression = compression
+        self._writers: dict[tuple[str, str], object] = {}
+        self._counts: dict[tuple[str, str], int] = {}
+        self._paths: dict[tuple[str, str], Path] = {}
+
+    def _path_for(self, period: str, key: str) -> Path:
+        period_dir, partition_name = PERIOD_DIRS[period]
+        out_dir = self.out_root / period_dir / self.table / f"{partition_name}={key}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return out_dir / f"{self.table}_{key}.parquet"
+
+    def write(self, df: pd.DataFrame, *, period: str, key: str) -> int:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        safe_key = safe_period_key(key)
+        table_key = (period, safe_key)
+        out_file = self._path_for(period, safe_key)
+        arrow_table = pa.Table.from_pandas(df, preserve_index=False)
+
+        writer = self._writers.get(table_key)
+        if writer is None:
+            writer = pq.ParquetWriter(out_file, arrow_table.schema, compression=self.compression)
+            self._writers[table_key] = writer
+            self._paths[table_key] = out_file
+
+        writer.write_table(arrow_table)
+        self._counts[table_key] = self._counts.get(table_key, 0) + len(df)
+        return len(df)
+
+    def close(self) -> None:
+        for writer in self._writers.values():
+            writer.close()
+        for key, rows in sorted(self._counts.items()):
+            out_file = self._paths[key]
+            print(f"[WRITE] {rows:,} rows -> {out_file}")
+
+
 def write_partitioned(
     df: pd.DataFrame,
     *,
@@ -126,6 +221,27 @@ def write_partitioned(
     return written
 
 
+def write_rollups(
+    df: pd.DataFrame,
+    *,
+    writers: RollupParquetWriters,
+    date_col: str,
+    timestamp_unit: str,
+    periods: list[str],
+) -> int:
+    if df.empty:
+        return 0
+    if date_col not in df.columns:
+        raise ValueError(f"timestamp/date column not found: {date_col}")
+
+    written = 0
+    for period in periods:
+        keys = timestamp_to_period(df[date_col], timestamp_unit, period)
+        for key, part in df.groupby(keys, dropna=False):
+            written += writers.write(part, period=period, key=safe_period_key(key))
+    return written
+
+
 def export_table(
     conn: sqlite3.Connection,
     *,
@@ -142,6 +258,8 @@ def export_table(
     params: list[object],
     dry_run: bool,
     overwrite: bool,
+    layout: str,
+    periods: list[str],
 ) -> int:
     if not table_exists(conn, table):
         print(f"[SKIP] table not found: {table}")
@@ -161,33 +279,56 @@ def export_table(
         return 0
 
     if overwrite:
-        target = out_root / table
-        if target.exists():
-            print(f"[OVERWRITE] removing existing parquet table: {target}")
-            import shutil
+        import shutil
 
-            shutil.rmtree(target)
+        if layout == "rollup":
+            for period in periods:
+                period_dir, _partition_name = PERIOD_DIRS[period]
+                target = out_root / period_dir / table
+                if target.exists():
+                    print(f"[OVERWRITE] removing existing rollup table: {target}")
+                    shutil.rmtree(target)
+        else:
+            target = out_root / table
+            if target.exists():
+                print(f"[OVERWRITE] removing existing parquet table: {target}")
+                shutil.rmtree(target)
 
     col_sql = ", ".join(select_cols)
     sql = f"SELECT {col_sql} FROM {table} {where_sql} ORDER BY id"
     written = 0
-    for chunk_index, chunk in enumerate(pd.read_sql_query(sql, conn, params=params, chunksize=chunk_size)):
-        chunk = coerce_schema(chunk, table, symbol, strict)
-        written += write_partitioned(
-            chunk,
-            out_root=out_root,
-            table=table,
-            date_col=date_col,
-            timestamp_unit=timestamp_unit,
-            chunk_index=chunk_index,
-            compression=compression,
-            prefix="part-db",
-        )
+    if layout == "rollup":
+        writers = RollupParquetWriters(out_root=out_root, table=table, compression=compression)
+        try:
+            for _chunk_index, chunk in enumerate(pd.read_sql_query(sql, conn, params=params, chunksize=chunk_size)):
+                chunk = coerce_schema(chunk, table, symbol, strict)
+                written += write_rollups(
+                    chunk,
+                    writers=writers,
+                    date_col=date_col,
+                    timestamp_unit=timestamp_unit,
+                    periods=periods,
+                )
+        finally:
+            writers.close()
+    else:
+        for chunk_index, chunk in enumerate(pd.read_sql_query(sql, conn, params=params, chunksize=chunk_size)):
+            chunk = coerce_schema(chunk, table, symbol, strict)
+            written += write_partitioned(
+                chunk,
+                out_root=out_root,
+                table=table,
+                date_col=date_col,
+                timestamp_unit=timestamp_unit,
+                chunk_index=chunk_index,
+                compression=compression,
+                prefix="part-db",
+            )
     return written
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Export harvester SQLite DB tables to partitioned Parquet.")
+    parser = argparse.ArgumentParser(description="Export harvester SQLite DB tables to Parquet.")
     parser.add_argument("--symbol", "-s", required=True, help="BTC, ADA, BTCUSDT, ADAUSDT, etc.")
     parser.add_argument("--table", "-t", choices=DEFAULT_TABLES + ["all"], default="all", help="Table to export.")
     parser.add_argument("--db", default=None, help="Override SQLite DB path.")
@@ -195,6 +336,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-root", default=None, help="Override output root. Default: data/parquet/<COIN>.")
     parser.add_argument("--date-col", default="event_ts", help="Timestamp column used for date partitioning.")
     parser.add_argument("--timestamp-unit", default="auto", choices=["auto", "s", "ms"], help="Timestamp unit.")
+    parser.add_argument("--layout", default="partitioned", choices=["partitioned", "rollup"], help="Output layout.")
+    parser.add_argument(
+        "--periods",
+        type=parse_periods,
+        default=parse_periods("day"),
+        help="Rollup periods for --layout rollup. Example: day,month,quarter,year",
+    )
     parser.add_argument("--chunk-size", type=int, default=250_000, help="Rows per DB read chunk.")
     parser.add_argument("--compression", default="snappy", help="Parquet compression.")
     parser.add_argument("--keep-extra-columns", action="store_true", help="Keep DB columns outside known schema.")
@@ -225,7 +373,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[DB]   {db_path}")
     print(f"[OUT]  {out_root}")
-    print(f"[MODE] read-only, table={args.table}, chunk_size={args.chunk_size:,}")
+    print(f"[MODE] read-only, table={args.table}, layout={args.layout}, chunk_size={args.chunk_size:,}")
+    if args.layout == "rollup":
+        print(f"[ROLLUP] periods={','.join(args.periods)}")
     if where_sql:
         print(f"[WHERE] {where_sql}  params={params}")
 
@@ -248,6 +398,8 @@ def main(argv: list[str] | None = None) -> int:
                 params=params,
                 dry_run=args.dry_run,
                 overwrite=args.overwrite,
+                layout=args.layout,
+                periods=args.periods,
             )
     finally:
         conn.close()

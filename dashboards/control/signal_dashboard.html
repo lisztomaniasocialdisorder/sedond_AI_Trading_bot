@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Signal Dashboard</title>
+  <title>訊號儀表板</title>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
     :root {
@@ -355,18 +355,18 @@
   <div class="shell">
     <header>
       <div>
-        <h1>Signal Dashboard</h1>
-        <div class="subtitle">A separate control view for OBI, spread, depth, flow, and AI-readiness.</div>
+        <h1>訊號儀表板</h1>
+        <div class="subtitle">獨立觀測 OBI、價差、深度、成交流與 AI 接入準備狀態。</div>
       </div>
       <div class="toolbar">
         <span id="statusDot" class="status-dot"></span>
-        <div class="segmented" aria-label="Symbol selector">
+        <div class="segmented" aria-label="交易對選擇">
           <button id="btnBTC" class="active" type="button">BTC</button>
           <button id="btnADA" type="button">ADA</button>
         </div>
         <div class="refresh">
-          <button id="refreshNow" type="button" title="Refresh">↻</button>
-          <select id="refreshMs" aria-label="Refresh interval">
+          <button id="refreshNow" type="button" title="重新整理">↻</button>
+          <select id="refreshMs" aria-label="刷新間隔">
             <option value="500">0.5s</option>
             <option value="1000" selected>1s</option>
             <option value="2000">2s</option>
@@ -378,32 +378,32 @@
 
     <section class="top-grid">
       <div class="panel metric">
-        <div class="label">Last Price</div>
+        <div class="label">最新價格</div>
         <div id="price" class="value">-</div>
-        <div id="bidAsk" class="subvalue">Bid - / Ask -</div>
+        <div id="bidAsk" class="subvalue">買一 - / 賣一 -</div>
       </div>
       <div class="panel metric">
         <div class="label">OBI</div>
         <div id="obi" class="value cyan">-</div>
-        <div id="obiState" class="subvalue">Neutral</div>
+        <div id="obiState" class="subvalue">中性</div>
       </div>
       <div class="panel metric">
-        <div class="label">Spread</div>
+        <div class="label">買賣價差</div>
         <div id="spread" class="value blue">-</div>
-        <div class="subvalue">basis points</div>
+        <div class="subvalue">單位：bps</div>
       </div>
       <div class="panel metric">
-        <div class="label">Depth Imbalance</div>
+        <div class="label">深度不平衡</div>
         <div id="imbalance" class="value violet">-</div>
-        <div class="subvalue">L20 book</div>
+        <div class="subvalue">二十檔委託簿</div>
       </div>
       <div class="panel metric">
-        <div class="label">Buy Pressure</div>
+        <div class="label">買方壓力</div>
         <div id="buyPressure" class="value good">-</div>
-        <div class="subvalue">last 60 seconds</div>
+        <div class="subvalue">最近 60 秒</div>
       </div>
       <div class="panel metric">
-        <div class="label">DB Rows</div>
+        <div class="label">DB 總資料筆數</div>
         <div id="dbRows" class="value warn">-</div>
         <div id="dbSize" class="subvalue">- MB</div>
       </div>
@@ -412,25 +412,25 @@
     <section class="main-grid">
       <div class="panel">
         <div class="section-head">
-          <div class="section-title">OBI Gauge</div>
-          <div id="updatedAt" class="pill">waiting</div>
+          <div class="section-title">OBI 儀表</div>
+          <div id="updatedAt" class="pill">等待資料</div>
         </div>
         <div class="gauge-wrap">
           <div id="obiGauge"></div>
         </div>
         <div class="section-head">
-          <div class="section-title">Order Book L5</div>
-          <div id="bookMid" class="pill">mid -</div>
+          <div class="section-title">五檔委託簿</div>
+          <div id="bookMid" class="pill">中間價 -</div>
         </div>
         <div class="book">
           <table>
             <thead>
               <tr>
-                <th>Lvl</th>
-                <th>Bid</th>
-                <th>Bid Qty</th>
-                <th>Ask</th>
-                <th>Ask Qty</th>
+                <th>檔位</th>
+                <th>買價</th>
+                <th>買量</th>
+                <th>賣價</th>
+                <th>賣量</th>
               </tr>
             </thead>
             <tbody id="bookRows"></tbody>
@@ -449,38 +449,38 @@
     <section class="wide-panel">
       <div class="panel">
         <div class="section-head">
-          <div class="section-title">Flow</div>
-          <div class="pill">1 minute</div>
+          <div class="section-title">成交流</div>
+          <div class="pill">最近 1 分鐘</div>
         </div>
         <div class="list">
-          <div class="row"><span>Trades</span><strong id="trades1m">-</strong></div>
-          <div class="row"><span>Volume</span><strong id="volume1m">-</strong></div>
-          <div class="row"><span>High</span><strong id="high1m">-</strong></div>
-          <div class="row"><span>Low</span><strong id="low1m">-</strong></div>
+          <div class="row"><span>成交筆數</span><strong id="trades1m">-</strong></div>
+          <div class="row"><span>成交量</span><strong id="volume1m">-</strong></div>
+          <div class="row"><span>最高價</span><strong id="high1m">-</strong></div>
+          <div class="row"><span>最低價</span><strong id="low1m">-</strong></div>
         </div>
       </div>
       <div class="panel">
         <div class="section-head">
-          <div class="section-title">Data Readiness</div>
+          <div class="section-title">資料庫筆數</div>
           <div class="pill">SQLite</div>
         </div>
         <div class="list" id="countsList"></div>
       </div>
       <div class="panel">
         <div class="section-head">
-          <div class="section-title">AI Brain Slot</div>
-          <div class="pill">standby</div>
+          <div class="section-title">AI 大腦接入口</div>
+          <div class="pill">待接入</div>
         </div>
         <div class="list">
-          <div class="row"><span>Feature stream</span><strong id="featureState">ready</strong></div>
-          <div class="row"><span>Model signal</span><strong>not attached</strong></div>
-          <div class="row"><span>Trading mode</span><strong>paper first</strong></div>
-          <div class="row"><span>Live order lock</span><strong class="warn">enabled</strong></div>
+          <div class="row"><span>特徵資料流</span><strong id="featureState">就緒</strong></div>
+          <div class="row"><span>模型訊號</span><strong>尚未接上</strong></div>
+          <div class="row"><span>交易模式</span><strong>先跑模擬盤</strong></div>
+          <div class="row"><span>真實盤保護</span><strong class="warn">已啟用</strong></div>
         </div>
       </div>
     </section>
 
-    <div class="footer-note">Independent page: /signal_dashboard.html</div>
+    <div class="footer-note">獨立頁面：/signal_dashboard.html</div>
   </div>
 
   <script>
@@ -507,6 +507,11 @@
       return Number(n).toLocaleString();
     }
 
+    function rows(n) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "-";
+      return `${Number(n).toLocaleString()} 筆`;
+    }
+
     function pct(n, digits = 1) {
       if (n === null || n === undefined || Number.isNaN(Number(n))) return "-";
       return fmt(Number(n) * 100, digits) + "%";
@@ -524,11 +529,11 @@
 
     function gaugeLabel(v) {
       const x = Number(v) * 100;
-      if (x <= -60) return "Extreme Ask";
-      if (x <= -20) return "Ask Heavy";
-      if (x < 20) return "Neutral";
-      if (x < 60) return "Bid Heavy";
-      return "Extreme Bid";
+      if (x <= -60) return "極端賣方";
+      if (x <= -20) return "賣方偏重";
+      if (x < 20) return "中性";
+      if (x < 60) return "買方偏重";
+      return "極端買方";
     }
 
     function gaugeColor(v) {
@@ -596,8 +601,8 @@
         type: "scatter",
         mode: "lines",
         line: { color: "#4fb4ff", width: 2 },
-        name: "Price"
-      }], layout("Trade Price", "Price"), plotConfig);
+        name: "價格"
+      }], layout("成交價格", "價格"), plotConfig);
 
       Plotly.react("obiChart", [{
         x: l1.map((r) => ts(r.ts)),
@@ -607,7 +612,7 @@
         line: { color: "#43d9d2", width: 2 },
         name: "OBI"
       }], {
-        ...layout("Order Book Imbalance", "OBI"),
+        ...layout("委託簿不平衡", "OBI"),
         shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0, line: { color: "#90a3b8", width: 1, dash: "dash" } }]
       }, plotConfig);
 
@@ -618,7 +623,7 @@
           type: "scatter",
           mode: "lines",
           line: { color: "#20d18f", width: 2 },
-          name: "Bid"
+          name: "買方"
         },
         {
           x: metrics.map((r) => ts(r.ts)),
@@ -626,9 +631,9 @@
           type: "scatter",
           mode: "lines",
           line: { color: "#ff5f7a", width: 2 },
-          name: "Ask"
+          name: "賣方"
         }
-      ], layout("L20 Depth", "Qty"), plotConfig);
+      ], layout("L20 深度", "數量"), plotConfig);
 
       Plotly.react("spreadChart", [{
         x: l1.map((r) => ts(r.ts)),
@@ -636,10 +641,10 @@
         type: "scatter",
         mode: "lines",
         line: { color: "#b68cff", width: 2 },
-        name: "Spread bps"
-      }], layout("Spread", "bps"), plotConfig);
+        name: "價差 bps"
+      }], layout("買賣價差", "bps"), plotConfig);
 
-      $("featureState").textContent = `${l1.length} L1 / ${metrics.length} depth`;
+      $("featureState").textContent = `${l1.length} 筆 L1 / ${metrics.length} 筆深度`;
       $("price").style.fontSize = digits === 4 ? "clamp(25px, 2.1vw, 38px)" : "";
     }
 
@@ -660,15 +665,16 @@
     function updateCounts(data) {
       const counts = data.counts || {};
       const items = [
-        ["Trades", counts.trades],
-        ["Agg Trades", counts.agg_trades],
-        ["L1 Rows", counts.orderbook_l1],
-        ["L5 Rows", counts.orderbook_l5],
-        ["L20 Rows", counts.orderbook_l20],
-        ["Metrics", counts.orderbook_metrics]
+        ["總計", data.total_rows],
+        ["逐筆成交 trades", counts.trades],
+        ["彙總成交 agg_trades", counts.agg_trades],
+        ["一檔 orderbook_l1", counts.orderbook_l1],
+        ["五檔 orderbook_l5", counts.orderbook_l5],
+        ["二十檔 orderbook_l20", counts.orderbook_l20],
+        ["深度指標 orderbook_metrics", counts.orderbook_metrics]
       ];
       $("countsList").innerHTML = items.map(([label, value]) =>
-        `<div class="row"><span>${label}</span><strong>${compact(value)}</strong></div>`
+        `<div class="row"><span>${label}</span><strong>${rows(value)}</strong></div>`
       ).join("");
     }
 
@@ -678,20 +684,20 @@
       const digits = priceDigits();
       const ok = Boolean(data.ok);
       $("statusDot").classList.toggle("live", ok);
-      $("updatedAt").textContent = ok ? new Date().toLocaleTimeString() : (data.error || "error");
+      $("updatedAt").textContent = ok ? `更新 ${new Date().toLocaleTimeString()}` : (data.error || "錯誤");
 
       $("price").textContent = fmt(latest.price, digits);
-      $("bidAsk").textContent = `Bid ${fmt(latest.best_bid, digits)} / Ask ${fmt(latest.best_ask, digits)}`;
+      $("bidAsk").textContent = `買一 ${fmt(latest.best_bid, digits)} / 賣一 ${fmt(latest.best_ask, digits)}`;
       $("obi").textContent = pct(latest.obi, 2);
       $("obiState").textContent = gaugeLabel(latest.obi || 0);
       $("spread").textContent = fmt(latest.spread_bps, 3);
       $("imbalance").textContent = pct(latest.depth_imbalance, 2);
       $("buyPressure").textContent = pct(latest.buy_pressure, 1);
-      $("dbRows").textContent = compact(data.total_rows);
-      $("dbSize").textContent = `${fmt(data.db_size_mb, 1)} MB`;
-      $("bookMid").textContent = `mid ${fmt(latest.price, digits)}`;
+      $("dbRows").textContent = rows(data.total_rows);
+      $("dbSize").textContent = `DB 大小 ${fmt(data.db_size_mb, 1)} MB`;
+      $("bookMid").textContent = `中間價 ${fmt(latest.price, digits)}`;
 
-      $("trades1m").textContent = compact(stats.trades_1m);
+      $("trades1m").textContent = rows(stats.trades_1m);
       $("volume1m").textContent = fmt(stats.volume_1m, digits === 4 ? 0 : 3);
       $("high1m").textContent = fmt(stats.high_1m, digits);
       $("low1m").textContent = fmt(stats.low_1m, digits);

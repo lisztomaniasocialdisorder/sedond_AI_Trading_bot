@@ -222,6 +222,8 @@ def build_order_payload(order: dict[str, Any]) -> dict[str, str]:
         payload["px"] = px
 
     pos_side = str(order.get("posSide") or "").strip().lower()
+    if not pos_side and inst_id.endswith("-SWAP"):
+        pos_side = "long" if side == "buy" else "short"
     if pos_side:
         payload["posSide"] = pos_side
 
