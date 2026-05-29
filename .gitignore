@@ -10,12 +10,20 @@ __pycache__/
 *.key
 *.pem
 
+# Google Drive OAuth 憑證（切勿上傳！）
+credentials.json
+token.json
+
 # Large harvester data
 *.db
 *.db-wal
 *.db-shm
 data/parquet/
+data/parquet_spool/
 data/parquet_rollup/
+data/parquet_signal/
+data/features/
+data/events/
 harvesters/*_harvester/raw_db/
 harvesters/*_harvester/logs/
 
@@ -23,6 +31,13 @@ harvesters/*_harvester/logs/
 logs/
 outputs/
 models/
+experiments/
+_analysis/
+*.pkl
+*.joblib
+*.keras
+*.h5
+*.parquet
 data/cache_fng.json
 data/trading_state.json
 btc_data/

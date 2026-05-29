@@ -145,6 +145,43 @@ def get_open_orders(inst_id: str | None = None) -> dict[str, Any]:
     return _request("GET", "/api/v5/trade/orders-pending", params=params, private=True)
 
 
+def set_leverage(
+    inst_id: str,
+    *,
+    lever: int,
+    mgn_mode: str = "cross",
+    pos_side: str | None = None,
+    confirm_live: bool = False,
+) -> dict[str, Any]:
+    inst_id = str(inst_id or "").strip().upper()
+    mgn_mode = str(mgn_mode or "cross").strip().lower()
+    pos_side = str(pos_side or "").strip().lower()
+    lever = max(1, int(lever or 1))
+    if not inst_id:
+        raise ValueError("instId is required")
+
+    payload: dict[str, str] = {
+        "instId": inst_id,
+        "lever": str(lever),
+        "mgnMode": mgn_mode,
+    }
+    if pos_side:
+        payload["posSide"] = pos_side
+
+    allowed, status, reason = _can_send_trade(confirm_live)
+    if not allowed:
+        return {
+            "dry_run": True,
+            "blocked": True,
+            "okx_status": status,
+            "payload": payload,
+            "message": reason,
+        }
+
+    result = _request("POST", "/api/v5/account/set-leverage", payload=payload, private=True)
+    return {"dry_run": False, "payload": payload, "result": result}
+
+
 def _can_send_trade(confirm_live: bool = True) -> tuple[bool, dict[str, Any], str | None]:
     status = get_status()
     if not (status["configured"] and status["live_enabled"] and confirm_live):

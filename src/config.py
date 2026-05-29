@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import json
 import os
 
 
@@ -117,6 +118,7 @@ class Settings:
             '5m': 0.60, '15m': 0.55, '30m': 0.52,
             '1h': 0.48, '1d': 0.42,
         }
+        self._apply_strategy_overrides()
 
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -125,3 +127,30 @@ class Settings:
     def get_signal_threshold(self) -> float:
         """Return per-interval signal threshold."""
         return float((self.interval_signal_thresholds or {}).get(self.interval or '1h', 0.48))
+
+    def _apply_strategy_overrides(self) -> None:
+        path = Path(os.getenv("STRATEGY_PARAMS_PATH", "outputs/strategy_params.json"))
+        if not path.exists():
+            return
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+
+        if "long_threshold" in payload:
+            self.long_threshold = float(payload["long_threshold"])
+        if "short_threshold" in payload:
+            self.short_threshold = float(payload["short_threshold"])
+        if "drawdown_stop" in payload:
+            self.drawdown_stop = float(payload["drawdown_stop"])
+        if "max_leverage" in payload:
+            self.max_leverage = int(payload["max_leverage"])
+        thresholds = payload.get("interval_signal_thresholds")
+        if isinstance(thresholds, dict):
+            merged = dict(self.interval_signal_thresholds or {})
+            for k, v in thresholds.items():
+                try:
+                    merged[str(k)] = float(v)
+                except Exception:
+                    pass
+            self.interval_signal_thresholds = merged

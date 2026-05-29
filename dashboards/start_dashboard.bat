@@ -10,11 +10,11 @@ echo.
 
 cd /d "%~dp0"
 
-pip install flask --quiet
+py -3.11 -m pip install flask pandas pyarrow tensorflow --quiet
 
 echo Starting server...
 echo.
 start "Open Dashboard" powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; Start-Process 'http://localhost:5000/signal_dashboard.html'"
-python server.py
+py -3.11 server.py
 
 pause

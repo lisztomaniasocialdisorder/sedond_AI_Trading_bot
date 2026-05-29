@@ -8,6 +8,13 @@ harvesters/
 ├── btc_harvester.py               ← BTC 啟動入口
 ├── ada_harvester.py               ← ADA 啟動入口
 ├── requirements_harvester.txt
+├── db_to_parquet.py               ← SQLite DB 轉 Parquet
+├── csv_to_parquet.py              ← CSV 轉 Parquet
+├── compact_parquet_spool.py       ← 整理 harvester 即時 parquet spool
+├── auto_parquet_rollup.py         ← 從 DB 建 daily/monthly/quarterly/yearly Parquet
+├── archive_prune_db.py            ← Parquet 驗證成功後刪 SQLite 舊資料
+├── auto_parquet_rollup.bat        ← 每天 03:00 排程呼叫
+├── install_parquet_rollup_schedule.bat
 ├── BTC_harvester/
 │   ├── logs/                      ← 每日 rotating log
 │   └── raw_db/microstructure_BTC.db
@@ -109,6 +116,38 @@ python ada_harvester.py
 
 ## Parquet 輸出路徑
 
+Harvester 會先即時寫小批次 spool：
+
+```
+data/parquet_spool/
+├── ADA/
+│   └── trades/date=YYYY-MM-DD/part-*.parquet
+└── BTC/
+    └── trades/date=YYYY-MM-DD/part-*.parquet
+```
+
+每天 03:00 會整理成 rollup 封存路徑：
+
+```
+data/parquet_rollup/
+├── ADA/
+│   ├── daily/
+│   │   ├── trades_YYYY-MM-DD.parquet
+│   │   ├── orderbook_l1_YYYY-MM-DD.parquet
+│   │   ├── orderbook_l20_YYYY-MM-DD.parquet
+│   │   └── orderbook_metrics_YYYY-MM-DD.parquet
+│   ├── monthly/
+│   ├── quarterly/
+│   └── yearly/
+└── BTC/
+    ├── daily/
+    ├── monthly/
+    ├── quarterly/
+    └── yearly/
+```
+
+舊版 partitioned 路徑只有手動使用 `db_to_parquet.py` 或 `csv_to_parquet.py` 時才會輸出。
+
 ```
 data/parquet/BTC/
 ├── trades/date=2025-01-01/part-*.parquet
@@ -124,7 +163,7 @@ data/parquet/BTC/
 讀取方式：
 ```python
 import pandas as pd
-df = pd.read_parquet("data/parquet/BTC/trades/")
+df = pd.read_parquet("data/parquet_rollup/BTC/daily/trades_2026-05-27.parquet")
 ```
 
 ---

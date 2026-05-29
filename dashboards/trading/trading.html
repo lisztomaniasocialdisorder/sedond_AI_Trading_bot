@@ -8,13 +8,15 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     :root {
-      --bg: #071018;
+      --bg: #050505;
       --panel: #111b26;
       --panel-2: #162333;
       --panel-3: #1b2b3d;
-      --line: #28394c;
-      --text: #edf5ff;
-      --muted: #8fa4b9;
+      --card-layer-1: #050505;
+      --card-layer-2: #050505;
+      --line: #ffd7a3;
+      --text: #ffffff;
+      --muted: #fff1d6;
       --green: #24d18f;
       --red: #ff6478;
       --amber: #f4bf55;
@@ -126,6 +128,14 @@
       gap: 10px;
     }
 
+    .chart-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .segmented {
       display: grid;
       grid-template-columns: repeat(2, minmax(88px, 1fr));
@@ -176,12 +186,55 @@
       gap: 10px;
       margin-top: 14px;
     }
+    .pipeline-banner {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card-layer-1);
+      padding: 10px 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .pipeline-banner-top {
+      display: grid;
+      grid-template-columns: minmax(180px, auto) minmax(0, 1fr) minmax(90px, auto);
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pipeline-progress {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .pipeline-progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #39ff14, #7dff5a);
+      transition: width 220ms ease;
+    }
+    .pipeline-progress > div.running {
+      background: repeating-linear-gradient(
+        135deg,
+        #39ff14 0 12px,
+        #7dff5a 12px 24px
+      );
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.55);
+      animation: pipelineFlow 1s linear infinite;
+    }
+    @keyframes pipelineFlow {
+      from { background-position: 0 0; }
+      to { background-position: 40px 0; }
+    }
 
     .panel {
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: var(--panel);
+      background: var(--card-layer-1);
       animation: panelIn 360ms ease both;
     }
 
@@ -299,7 +352,7 @@
     .mini {
       border: 1px solid rgba(255,255,255,.07);
       border-radius: var(--radius);
-      background: rgba(255,255,255,.025);
+      background: var(--card-layer-2);
       padding: 10px;
     }
 
@@ -328,20 +381,88 @@
       font-size: 13px;
     }
 
-    .chart {
-      min-height: 420px;
-      padding: 8px;
-    }
-
-    .indicator-stack {
+    .news-box {
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.22);
+      padding: 10px;
       display: grid;
       gap: 8px;
-      margin-top: 12px;
     }
 
-    .small-chart {
-      min-height: 190px;
+    .news-list {
+      display: grid;
+      gap: 6px;
+      max-height: 210px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .news-item a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .news-item a:hover {
+      text-decoration: underline;
+    }
+
+    .news-meta {
+      color: #fff1d6;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .reason-wrap {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .reason-col {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.2);
+      padding: 8px 10px;
+    }
+
+    .reason-title {
+      font-size: 12px;
+      font-weight: 850;
+      margin-bottom: 6px;
+    }
+
+    .reason-title.bull {
+      color: #24d18f;
+    }
+
+    .reason-title.bear {
+      color: #ff6478;
+    }
+
+    .reason-list {
+      margin: 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .chart {
+      min-height: 760px;
       padding: 8px;
+    }
+
+    .tv-frame {
+      width: 100%;
+      border: 0;
+      min-height: 760px;
+      border-radius: var(--radius);
+      background: #111b26;
     }
 
     .fear-chart {
@@ -350,24 +471,41 @@
       margin-top: 12px;
     }
 
+    .fg-today {
+      min-height: 210px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.95fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .fg-meta {
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius);
+      background: var(--card-layer-2);
+      padding: 12px;
+      display: grid;
+      align-content: center;
+      gap: 10px;
+    }
+
     .asset-chart {
       min-height: 220px;
       padding: 8px;
     }
 
     .chart,
-    .small-chart,
     .fear-chart,
     .asset-chart {
-      opacity: .98;
+      opacity: 1;
       transition: opacity 180ms ease, border-color 180ms ease;
     }
 
     .chart.updating,
-    .small-chart.updating,
     .fear-chart.updating,
     .asset-chart.updating {
-      opacity: .72;
+      opacity: 1;
       border-color: #3e5670;
     }
 
@@ -379,7 +517,7 @@
     .style-card {
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: linear-gradient(135deg, #162333 0%, #0d1722 100%);
+      background: var(--card-layer-2);
       padding: 14px;
       display: grid;
       gap: 12px;
@@ -456,7 +594,7 @@
     .record-card {
       border: 1px solid rgba(255,255,255,.07);
       border-radius: var(--radius);
-      background: rgba(255,255,255,.025);
+      background: var(--card-layer-2);
       padding: 11px;
       display: grid;
       gap: 8px;
@@ -471,6 +609,33 @@
       gap: 10px;
       font-family: var(--mono);
       font-size: 14px;
+    }
+
+    .side-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 68px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      letter-spacing: 0;
+      border: 1px solid transparent;
+      text-transform: lowercase;
+    }
+
+    .side-short {
+      color: #ffdfe4;
+      background: rgba(255, 100, 120, 0.28);
+      border-color: rgba(255, 100, 120, 0.75);
+      box-shadow: inset 0 0 0 1px rgba(255, 100, 120, 0.25);
+    }
+
+    .side-long {
+      color: #e6fff4;
+      background: rgba(36, 209, 143, 0.28);
+      border-color: rgba(36, 209, 143, 0.75);
+      box-shadow: inset 0 0 0 1px rgba(36, 209, 143, 0.25);
     }
 
     .order-grid,
@@ -494,6 +659,56 @@
       font-family: var(--mono);
     }
 
+    .pnl-strong {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .position-pnl {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .trade-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trade-filter-row input[type="date"] {
+      width: 170px;
+      height: 36px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: #0b141d;
+      color: var(--text);
+      padding: 0 8px;
+    }
+
+    .daily-pnl-box {
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.2);
+      padding: 8px 10px;
+      display: grid;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .daily-pnl-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+
     .green { color: var(--green); }
     .red { color: var(--red); }
     .amber { color: var(--amber); }
@@ -510,6 +725,7 @@
       header { grid-template-columns: 1fr; }
       .toolbar { justify-content: stretch; }
       .segmented, .status-pill { width: 100%; }
+      .pipeline-banner-top { grid-template-columns: 1fr; }
       .top-grid, .form-grid, .summary, .button-grid { grid-template-columns: 1fr; }
       .value { font-size: 28px; }
     }
@@ -520,7 +736,7 @@
     <header>
       <div>
         <h1>AI 交易面板</h1>
-        <div class="subtitle">手動紙上交易、OKX dry-run、AI 風控與即時微結構資料。</div>
+        <div class="subtitle">OKX 交易與 AI 風控。</div>
       </div>
       <div class="toolbar">
         <div class="segmented" aria-label="Symbol selector">
@@ -535,6 +751,15 @@
         <div id="okxStatus" class="status-pill"><i data-lucide="shield-alert" size="16"></i> OKX checking</div>
       </div>
     </header>
+    <section class="pipeline-banner">
+      <div class="pipeline-banner-top">
+        <strong id="nightlyStatusText">00:30 任務：等待中</strong>
+        <span id="nightlyStepText">步驟 -</span>
+        <strong id="nightlyPctText">0%</strong>
+      </div>
+      <div class="pipeline-progress"><div id="nightlyProgressBar"></div></div>
+      <div class="subvalue" id="nightlyMetaText">最近執行：-</div>
+    </section>
 
     <section class="top-grid">
       <div class="panel metric">
@@ -620,15 +845,31 @@
             <div class="mini"><span>止盈價格</span><strong id="tpPrice">-</strong></div>
           </div>
           <div class="button-grid">
-            <button id="paperSubmit" class="submit-buy" type="button"><i data-lucide="send" size="16"></i> 送出紙上單</button>
-            <button id="okxDryRun" type="button"><i data-lucide="plug-zap" size="16"></i> OKX Dry Run</button>
             <button id="okxLive" type="button"><i data-lucide="radio-tower" size="16"></i> 送模擬盤</button>
-            <button id="autoPaper" type="button"><i data-lucide="bot" size="16"></i> AI 紙上單一次</button>
             <button id="aiOkxLive" type="button"><i data-lucide="bot" size="16"></i> AI 送模擬盤一次</button>
             <button id="aiOkxAuto" type="button"><i data-lucide="repeat" size="16"></i> AI 連續送單：關</button>
-            <button id="clearOrders" type="button"><i data-lucide="trash-2" size="16"></i> 清除</button>
           </div>
           <div class="notice" id="safetyNote">OKX 目前使用模擬盤。買入會送 posSide=long，賣出會送 posSide=short。</div>
+          <div class="news-box">
+            <div class="section-title">關鍵字新聞</div>
+            <div id="keywordNewsList" class="news-list">
+              <div class="empty" style="min-height:72px">載入中...</div>
+            </div>
+            <div class="reason-wrap">
+              <div class="reason-col">
+                <div class="reason-title bull">看漲原因</div>
+                <ul id="bullReasonsList" class="reason-list">
+                  <li>等待資料</li>
+                </ul>
+              </div>
+              <div class="reason-col">
+                <div class="reason-title bear">看跌原因</div>
+                <ul id="bearReasonsList" class="reason-list">
+                  <li>等待資料</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -636,14 +877,30 @@
         <div class="panel">
           <div class="section-head">
             <div class="section-title">圖表與訊號</div>
-            <div id="marketAge" class="tag">等待中</div>
+            <div class="chart-toolbar">
+              <div class="segmented three">
+                <button data-kline-sec="60" type="button">1m</button>
+                <button data-kline-sec="300" type="button">5m</button>
+                <button data-kline-sec="900" type="button">15m</button>
+              </div>
+              <div class="segmented three">
+                <button data-kline-sec="3600" class="active" type="button">1h</button>
+                <button data-kline-sec="14400" type="button">4h</button>
+                <button data-kline-sec="86400" type="button">1d</button>
+              </div>
+              <div id="marketAge" class="tag">等待中</div>
+            </div>
           </div>
-          <div id="klineChart" class="chart"></div>
+          <iframe id="tvKlineFrame" class="tv-frame" title="TradingView Kline"></iframe>
         </div>
-        <div class="indicator-stack">
-          <div class="panel small-chart" id="macdChart"></div>
-          <div class="panel small-chart" id="rsiChart"></div>
-          <div class="panel small-chart" id="atrChart"></div>
+        <div class="panel fg-today">
+          <div id="fearGreedGauge"></div>
+          <div class="fg-meta">
+            <div class="label">本日 Fear &amp; Greed</div>
+            <div id="fgTodayValue" class="value amber">-</div>
+            <div id="fgTodayClass" class="subvalue">等待資料</div>
+            <div id="fgTodayTime" class="subvalue">-</div>
+          </div>
         </div>
         <div class="panel fear-chart" id="fearGreedChart"></div>
       </section>
@@ -671,6 +928,11 @@
             <div class="row"><span>OBI</span><strong id="obi">-</strong></div>
             <div class="row"><span>深度不平衡</span><strong id="depthImb">-</strong></div>
             <div class="row"><span>風控阻擋</span><strong id="riskBlock">無</strong></div>
+            <div class="row"><span>V10 模型</span><strong id="ruleBrain">等待資料</strong></div>
+            <div class="row"><span>V13 模型</span><strong id="modelV13">等待資料</strong></div>
+            <div class="row"><span>每週策略參數</span><strong id="strategyUpdated">未載入</strong></div>
+            <div class="row"><span>策略門控</span><strong id="strategyGate">等待中</strong></div>
+            <div class="row"><span>參數上限</span><strong id="strategyLimits">-</strong></div>
           </div>
 
           <div class="style-card">
@@ -678,7 +940,6 @@
             <div class="row"><span>連接模式</span><strong id="adapterMode">dry-run</strong></div>
             <div class="row"><span>最後回應</span><strong id="okxLast">-</strong></div>
           </div>
-
           <div>
             <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
               <div class="section-title">OKX 持倉</div>
@@ -697,24 +958,23 @@
 
           <div>
             <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
-              <div class="section-title">總資產日結</div>
-              <div id="equityCount" class="tag">0 days</div>
+              <div class="section-title">總資產每小時</div>
+              <div id="equityCount" class="tag">0 小時</div>
             </div>
             <div id="equityChart" class="panel asset-chart"></div>
           </div>
 
           <div>
             <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
-              <div class="section-title">紙上倉位</div>
-              <div id="orderCount" class="tag">0 orders</div>
-            </div>
-            <div id="positions" class="order-list"></div>
-          </div>
-
-          <div>
-            <div class="section-head" style="padding-left:0;padding-right:0;border-bottom:0;">
-              <div class="section-title">交易紀錄</div>
+              <div class="section-title">交易紀錄（全期間）</div>
               <div id="tradeRecordCount" class="tag">0 records</div>
+            </div>
+            <div class="trade-filter-row">
+              <input id="tradeDateFilter" type="date" title="查詢某一天交易紀錄">
+              <button id="tradeDateClear" type="button">清除日期</button>
+            </div>
+            <div id="tradeDailySummary" class="daily-pnl-box">
+              <div class="daily-pnl-row"><span>每日總盈虧</span><strong>-</strong></div>
             </div>
             <div id="tradeRecords" class="record-list"></div>
           </div>
@@ -736,9 +996,47 @@
     };
 
     const PREF_KEY = "tradingUiPrefs.v1";
-    const EQUITY_KEY = "okxDailyEquity.v1";
+    const EQUITY_KEY = "okxHourlyEquity.v1";
+    const LEGACY_EQUITY_KEY = "okxDailyEquity.v1";
     const RECORD_KEY = "tradeRecords.v1";
+    const MARTINGALE_STATE_KEY = "martingaleState.v1";
     const SERVER_STATE_URL = "/api/trading/state";
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const KLINE_LIMIT = 21600;
+    const OKX_FEE_BPS_TAKER = 5.0;
+    const OKX_FEE_BPS_MAKER = 2.0;
+    const CRASH_GUARD_COOLDOWN_MS = 45 * 60 * 1000;
+
+    function normalizeEquitySnapshots(rawRows) {
+      if (!Array.isArray(rawRows)) return [];
+      const rowsByHour = new Map();
+      for (const row of rawRows) {
+        if (!row || typeof row !== "object") continue;
+        const equity = Number(row.equity);
+        if (!Number.isFinite(equity) || equity <= 0) continue;
+        let ts = Number(row.ts);
+        if (!Number.isFinite(ts)) {
+          const rawKey = String(row.hour || row.date || "").trim();
+          if (!rawKey) continue;
+          const parsed = Date.parse(rawKey.includes("T") ? rawKey : `${rawKey}T00:00:00`);
+          if (!Number.isFinite(parsed)) continue;
+          ts = parsed;
+        }
+        const d = new Date(ts);
+        d.setMinutes(0, 0, 0);
+        const hour = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:00`;
+        rowsByHour.set(hour, {
+          hour,
+          ts,
+          equity,
+          usdtAvailable: Number.isFinite(Number(row.usdtAvailable)) ? Number(row.usdtAvailable) : null,
+          demo: Boolean(row.demo),
+        });
+      }
+      return Array.from(rowsByHour.values())
+        .sort((a, b) => String(a.hour).localeCompare(String(b.hour)))
+        .slice(-8760);
+    }
 
     function loadJson(key, fallback) {
       try {
@@ -751,6 +1049,25 @@
 
     let savedPrefs = loadJson(PREF_KEY, {});
 
+    function normalizeMartingaleState(rawState) {
+      const fallback = {
+        BTC: { step: 0, lastOutcome: "init", lastPnl: null, updatedAt: 0 },
+        ADA: { step: 0, lastOutcome: "init", lastPnl: null, updatedAt: 0 },
+      };
+      if (!rawState || typeof rawState !== "object") return fallback;
+      const out = { ...fallback };
+      for (const key of Object.keys(fallback)) {
+        const src = rawState[key] || {};
+        out[key] = {
+          step: Math.max(0, Math.floor(Number(src.step) || 0)),
+          lastOutcome: String(src.lastOutcome || "init"),
+          lastPnl: Number.isFinite(Number(src.lastPnl)) ? Number(src.lastPnl) : null,
+          updatedAt: Number.isFinite(Number(src.updatedAt)) ? Number(src.updatedAt) : 0,
+        };
+      }
+      return out;
+    }
+
     const state = {
       symbol: savedPrefs.symbol || "BTC",
       side: savedPrefs.side || "buy",
@@ -758,17 +1075,29 @@
       risk: savedPrefs.risk || localStorage.getItem("tradeRiskProfile") || "neutral",
       data: {},
       indicators: {},
+      ruleBrains: {},
+      v7Decisions: {},
+      strategy: {},
+      nightly: {},
       okx: {},
       account: null,
+      keywordNews: { ok: false, grouped: [], items: [] },
       pendingOrders: [],
       orders: JSON.parse(localStorage.getItem("paperOrders.v2") || "[]"),
       tradeRecords: loadJson(RECORD_KEY, []),
-      equitySnapshots: loadJson(EQUITY_KEY, []),
+      equitySnapshots: normalizeEquitySnapshots(loadJson(EQUITY_KEY, loadJson(LEGACY_EQUITY_KEY, []))),
+      martingaleState: normalizeMartingaleState(loadJson(MARTINGALE_STATE_KEY, {})),
       chartRange: JSON.parse(localStorage.getItem("tradingChartRange.v1") || "null"),
       applyingChartRange: false,
       aiAutoEnabled: savedPrefs.aiAutoEnabled === true,
+      v10BaselineTs: Number(savedPrefs.v10BaselineTs) || 0,
+      klineIntervalSec: Number(savedPrefs.klineIntervalSec) || 3600,
+      tradeRecordDate: String(savedPrefs.tradeRecordDate || ""),
       aiAutoBusy: false,
       aiAutoLastActionAt: 0,
+      crashGuardUntilMs: Number(savedPrefs.crashGuardUntilMs) || 0,
+      crashGuardReason: String(savedPrefs.crashGuardReason || ""),
+      nightlyProgressCache: { runKey: "", pct: 0 },
     };
 
     const $ = (id) => document.getElementById(id);
@@ -804,6 +1133,105 @@
       return state.data[state.symbol] || {};
     }
 
+    function currentRuleBrain() {
+      return state.ruleBrains[state.symbol]?.decision || null;
+    }
+
+    function currentV7Decision() {
+      return state.v7Decisions[state.symbol] || null;
+    }
+
+    function currentStrategy() {
+      return state.strategy[state.symbol] || null;
+    }
+
+    function userMaxLeverage() {
+      return Math.max(1, num($("maxLev")?.value) || 1);
+    }
+
+    function strategyMaxLeverage() {
+      const raw = num(currentStrategy()?.params?.max_leverage);
+      return finite(raw) && raw > 0 ? Number(raw) : Infinity;
+    }
+
+    function effectiveLeverageCap() {
+      return Math.max(1, Math.min(userMaxLeverage(), strategyMaxLeverage()));
+    }
+
+    function capLeverage(value, fallback = 1) {
+      const raw = finite(value) ? Number(value) : Number(fallback);
+      const lev = finite(raw) && raw > 0 ? raw : 1;
+      return Math.max(1, Math.min(effectiveLeverageCap(), lev));
+    }
+
+    function currentNightly() {
+      return state.nightly || {};
+    }
+
+    function sideFromRuleBrain(rb) {
+      if (!rb || !rb.allowed) return null;
+      if (rb.direction === "long") return "buy";
+      if (rb.direction === "short") return "sell";
+      return null;
+    }
+
+    function sideFromV7Decision(v7) {
+      if (!v7 || !v7.ok || !v7.allowed) return null;
+      if (v7.side === "buy") return "buy";
+      if (v7.side === "sell") return "sell";
+      return null;
+    }
+
+    function aiViewModel(signal, lev, style) {
+      const v7 = currentV7Decision();
+      if (v7?.ok) {
+        const modelLabel = String(v7.model_name || "AI").toUpperCase();
+        const conf = finite(v7.confidence)
+          ? Math.max(0, Math.min(1, Number(v7.confidence)))
+          : signal.confidence;
+        const v7Lev = finite(v7.suggested_leverage)
+          ? capLeverage(v7.suggested_leverage, lev)
+          : capLeverage(lev);
+        const side = sideFromV7Decision(v7);
+        if (side === "buy") {
+          return {
+            signalText: "看漲",
+            actionText: "買入 / 做多",
+            confidence: conf,
+            leverage: v7Lev,
+            levExplain: `${modelLabel} + ${RISK[state.risk].label}`,
+            source: "model",
+          };
+        }
+        if (side === "sell") {
+          return {
+            signalText: "看跌",
+            actionText: "賣出 / 做空",
+            confidence: conf,
+            leverage: v7Lev,
+            levExplain: `${modelLabel} + ${RISK[state.risk].label}`,
+            source: "model",
+          };
+        }
+        return {
+          signalText: "觀望",
+          actionText: "等待",
+          confidence: conf,
+          leverage: v7Lev,
+          levExplain: `${modelLabel} HOLD + ${RISK[state.risk].label}`,
+          source: "model",
+        };
+      }
+      return {
+        signalText: signal.signal,
+        actionText: signal.action,
+        confidence: signal.confidence,
+        leverage: lev,
+        levExplain: `${RISK[state.risk].label} + ${style.label}`,
+        source: "rule",
+      };
+    }
+
     function latest() {
       return currentData().latest || {};
     }
@@ -812,8 +1240,42 @@
       return SYMBOLS[state.symbol];
     }
 
+    function symbolMetaByInstId(instId = "") {
+      const key = String(instId || "").toUpperCase();
+      return Object.values(SYMBOLS).find((item) => String(item.okxInst || "").toUpperCase() === key) || symbolMeta();
+    }
+
     function priceDigits() {
       return symbolMeta().dp;
+    }
+
+    function tvIntervalFromSec(sec) {
+      const n = Number(sec);
+      if (n === 60) return "1";
+      if (n === 300) return "5";
+      if (n === 900) return "15";
+      if (n === 3600) return "60";
+      if (n === 14400) return "240";
+      if (n === 86400) return "D";
+      return "1";
+    }
+
+    function updateChartControls() {
+      document.querySelectorAll("[data-kline-sec]").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.klineSec) === Number(state.klineIntervalSec));
+      });
+      const tvEl = $("tvKlineFrame");
+      if (tvEl) tvEl.style.display = "block";
+    }
+
+    function refreshTradingViewFrame() {
+      const frame = $("tvKlineFrame");
+      if (!frame) return;
+      const pair = SYMBOLS[state.symbol]?.pair || "BTCUSDT";
+      const tvSymbol = `BINANCE:${pair}`;
+      const tvInterval = tvIntervalFromSec(state.klineIntervalSec);
+      const src = `https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=${encodeURIComponent(tvInterval)}&theme=dark&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=0&allow_symbol_change=0&saveimage=0&studies=%5B%5D`;
+      if (frame.src !== src) frame.src = src;
     }
 
     function getEntry() {
@@ -852,13 +1314,78 @@
       return num($("aiCapital").value);
     }
 
-    function getEffectivePrincipal({ aiCapped = false } = {}) {
+    function martingaleConfig() {
+      return { enabled: false, multiplier: 1, maxStep: 0 };
+    }
+
+    function getMartingaleNode(symbol = state.symbol) {
+      if (!state.martingaleState[symbol]) {
+        state.martingaleState[symbol] = { step: 0, lastOutcome: "init", lastPnl: null, updatedAt: 0 };
+      }
+      return state.martingaleState[symbol];
+    }
+
+    function saveMartingaleState() {
+      state.martingaleState = normalizeMartingaleState(state.martingaleState);
+      localStorage.setItem(MARTINGALE_STATE_KEY, JSON.stringify(state.martingaleState));
+      saveServerState({ martingaleState: state.martingaleState });
+    }
+
+    function resetMartingale(symbol = state.symbol, reason = "manual_reset") {
+      const node = getMartingaleNode(symbol);
+      node.step = 0;
+      node.lastOutcome = reason;
+      node.lastPnl = null;
+      node.updatedAt = Date.now();
+      saveMartingaleState();
+    }
+
+    function applyMartingaleOutcome(symbol = state.symbol, pnl = NaN) {
+      if (!finite(pnl)) return;
+      const cfg = martingaleConfig();
+      const node = getMartingaleNode(symbol);
+      if (!cfg.enabled) {
+        node.step = 0;
+        node.lastOutcome = "disabled";
+        node.lastPnl = Number(pnl);
+        node.updatedAt = Date.now();
+        saveMartingaleState();
+        return;
+      }
+      if (Number(pnl) < 0) {
+        node.step = Math.min(cfg.maxStep, Number(node.step || 0) + 1);
+        node.lastOutcome = "loss";
+      } else {
+        node.step = 0;
+        node.lastOutcome = "win";
+      }
+      node.lastPnl = Number(pnl);
+      node.updatedAt = Date.now();
+      saveMartingaleState();
+    }
+
+    function martingaleMultiplierFor(symbol = state.symbol) {
+      const cfg = martingaleConfig();
+      if (!cfg.enabled) return 1;
+      const node = getMartingaleNode(symbol);
+      const step = Math.max(0, Math.min(cfg.maxStep, Number(node.step) || 0));
+      return Math.pow(cfg.multiplier, step);
+    }
+
+    function getEffectivePrincipal({ aiCapped = false, useMartingale = false } = {}) {
       const principal = getPrincipal();
-      if (!aiCapped) return principal;
+      if (!aiCapped) {
+        if (!useMartingale) return principal;
+        return principal * martingaleMultiplierFor(state.symbol);
+      }
       const cap = getAiCapital();
       const available = getAvailableUsdt();
       const limits = [principal, cap, available].filter((v) => finite(v) && Number(v) > 0);
-      return limits.length ? Math.min(...limits.map(Number)) : principal;
+      const base = limits.length ? Math.min(...limits.map(Number)) : principal;
+      if (!useMartingale) return base;
+      const boosted = base * martingaleMultiplierFor(state.symbol);
+      const clamps = [boosted, cap, available].filter((v) => finite(v) && Number(v) > 0);
+      return clamps.length ? Math.min(...clamps.map(Number)) : boosted;
     }
 
     function getBaseQty(entry = getEntry(), principal = getPrincipal()) {
@@ -891,6 +1418,40 @@
       return finite(contracts) && finite(entry) ? Number(contracts) * meta.contractValue * Number(entry) : NaN;
     }
 
+    function inferFeeBps(ordType = "") {
+      const t = String(ordType || "").toLowerCase();
+      if (t === "limit" || t === "post_only") return OKX_FEE_BPS_MAKER;
+      return OKX_FEE_BPS_TAKER;
+    }
+
+    function inferOrderNotional(record = {}) {
+      if (finite(record.estimatedNotional)) return Math.abs(Number(record.estimatedNotional));
+      if (finite(record.notional)) return Math.abs(Number(record.notional));
+      if (finite(record.principal) && Number(record.principal) > 0) return Math.abs(Number(record.principal));
+      if (finite(record.qty) && finite(record.entry)) return Math.abs(Number(record.qty) * Number(record.entry));
+      if (finite(record.qty) && finite(record.avgPx)) {
+        const meta = symbolMetaByInstId(record.instId || record.pair || "");
+        return Math.abs(Number(record.qty) * Number(record.avgPx) * Number(meta.contractValue || 1));
+      }
+      return NaN;
+    }
+
+    function estimatedFeeFromRecord(record = {}) {
+      if (finite(record.fee)) return Math.abs(Number(record.fee));
+      const notional = inferOrderNotional(record);
+      if (!finite(notional) || notional <= 0) return 0;
+      const bps = finite(record.feeBps) ? Number(record.feeBps) : inferFeeBps(record.ordType || record.type);
+      return Math.abs(notional) * Math.abs(bps) / 10000;
+    }
+
+    function grossPnlFromRecord(record = {}) {
+      return finite(record?.pnl) ? Number(record.pnl) : 0;
+    }
+
+    function netPnlFromRecord(record = {}) {
+      return grossPnlFromRecord(record) - estimatedFeeFromRecord(record);
+    }
+
     function okxResultRow(result) {
       return result?.data?.[0] || {};
     }
@@ -906,32 +1467,83 @@
     }
 
     function computeSignal(data) {
+      // Priority 1: V10 model decision
+      const modelDecision = currentV7Decision();
+      if (modelDecision?.ok) {
+        const pLong = finite(modelDecision.prob_long) ? Number(modelDecision.prob_long) : 0.5;
+        const pShort = finite(modelDecision.prob_short) ? Number(modelDecision.prob_short) : (1 - pLong);
+        const confidence = finite(modelDecision.confidence) ? Number(modelDecision.confidence) : Math.max(pLong, pShort);
+        const score = Math.max(-1, Math.min(1, (pLong - pShort)));
+        const pFlat = finite(modelDecision.prob_flat) ? Number(modelDecision.prob_flat) : Math.max(0, 1 - Math.abs(score));
+        let signal = "觀望";
+        let action = "等待";
+        if (modelDecision.allowed && modelDecision.direction === "long") {
+          signal = "看漲";
+          action = "買入 / 做多";
+        } else if (modelDecision.allowed && modelDecision.direction === "short") {
+          signal = "看跌";
+          action = "賣出 / 做空";
+        }
+        return { score, confidence, pLong, pShort, pFlat, signal, action, source: String(modelDecision.model_name || "model") };
+      }
+
+      // Priority 2: 1h average harvester features
       const l = data.latest || {};
-      const obi = Number(l.obi || 0);
-      const depth = Number(l.depth_imbalance || 0);
-      const flow = flowScore(data);
+      const avg1h = data.averages_1h || {};
+      const obi = finite(avg1h.obi) ? Number(avg1h.obi) : Number(l.obi || 0);
+      const depth = finite(avg1h.depth_imbalance) ? Number(avg1h.depth_imbalance) : Number(l.depth_imbalance || 0);
+      const buyPressure = finite(avg1h.buy_pressure) ? Number(avg1h.buy_pressure) : Number(l.buy_pressure ?? 0.5);
+      const flow = Math.max(-1, Math.min(1, (buyPressure - 0.5) * 2));
       const spread = Math.abs(Number(l.spread_bps || 0));
-      let score = (obi * .38) + (depth * .34) + (flow * .28);
-      if (spread > 2.5) score *= .72;
+      let score = (obi * 0.38) + (depth * 0.34) + (flow * 0.28);
+      if (spread > 2.5) score *= 0.72;
       score = Math.max(-1, Math.min(1, score));
       const confidence = Math.min(1, Math.abs(score) * 1.65);
-      const pFlat = Math.max(.12, 1 - confidence);
-      const sideProb = (1 - pFlat) * .84;
-      const pLong = score >= 0 ? pFlat * .5 + sideProb : pFlat * .5 + ((1 - pFlat) - sideProb);
-      const pShort = score < 0 ? pFlat * .5 + sideProb : pFlat * .5 + ((1 - pFlat) - sideProb);
+      const pFlat = Math.max(0.12, 1 - confidence);
+      const sideProb = (1 - pFlat) * 0.84;
+      const pLong = score >= 0 ? pFlat * 0.5 + sideProb : pFlat * 0.5 + ((1 - pFlat) - sideProb);
+      const pShort = score < 0 ? pFlat * 0.5 + sideProb : pFlat * 0.5 + ((1 - pFlat) - sideProb);
       let signal = "觀望";
       let action = "等待";
-      if (confidence >= .28 && score > .08) {
+      if (confidence >= 0.28 && score > 0.08) {
         signal = "看漲";
         action = "買入 / 做多";
-      } else if (confidence >= .28 && score < -.08) {
+      } else if (confidence >= 0.28 && score < -0.08) {
         signal = "看跌";
         action = "賣出 / 做空";
       }
-      return { score, confidence, pLong, pShort, pFlat, signal, action };
+      return { score, confidence, pLong, pShort, pFlat, signal, action, source: "harvester_1h_avg" };
     }
 
     function classifyStyle(data, signal) {
+      const model = currentV7Decision();
+      if (model?.ok) {
+        const conf = finite(model.confidence) ? Math.max(0, Math.min(1, Number(model.confidence))) : 0;
+        const direction = String(model.direction || "flat").toLowerCase();
+        if (!model.allowed || direction === "flat" || conf < 0.55) {
+          return {
+            key: "neutral",
+            label: "中立",
+            score: 0,
+            reason: `v10 判定觀望（${pct(conf, 1)}）`,
+          };
+        }
+        if (conf >= 0.75) {
+          return {
+            key: "aggressive",
+            label: "激進",
+            score: 1.2,
+            reason: `v10 ${direction === "long" ? "看漲" : "看跌"} 高信心（${pct(conf, 1)}）`,
+          };
+        }
+        return {
+          key: "conservative",
+          label: "保守",
+          score: -0.4,
+          reason: `v10 ${direction === "long" ? "看漲" : "看跌"} 但信心中等（${pct(conf, 1)}）`,
+        };
+      }
+
       const l = data.latest || {};
       const spread = Math.abs(Number(l.spread_bps || 0));
       const depth = Math.abs(Number(l.depth_imbalance || 0));
@@ -954,6 +1566,8 @@
       const l = data.latest || {};
       const spread = Math.abs(Number(l.spread_bps || 0));
       const reserve = num($("reserve").value) || 0;
+      const crash = checkCrashGuard(data, signal, { activate: false });
+      if (crash.blocked) return crash.reason;
       if (!data.ok) return "資料離線";
       if (spread > 8) return "價差過大";
       if (signal.confidence < .12) return "信心不足";
@@ -961,27 +1575,155 @@
       return "none";
     }
 
+    function _equityDropPct(hours = 4) {
+      const rows = (state.equitySnapshots || []).slice().sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+      if (rows.length < 2) return 0;
+      const last = rows[rows.length - 1];
+      const endTs = Number(last.ts || 0);
+      const startTs = endTs - (hours * 3600 * 1000);
+      const start = rows.find((r) => Number(r.ts || 0) >= startTs) || rows[0];
+      const startEq = Number(start.equity || 0);
+      const endEq = Number(last.equity || 0);
+      if (!Number.isFinite(startEq) || !Number.isFinite(endEq) || startEq <= 0) return 0;
+      return (endEq / startEq) - 1.0;
+    }
+
+    function _recentLossStreak(limit = 3) {
+      const rows = (state.tradeRecords || [])
+        .filter((r) => String(r.status || "").toLowerCase() !== "blocked")
+        .slice(0, 20);
+      let streak = 0;
+      for (const r of rows) {
+        const pnl = Number(r.pnl);
+        if (!Number.isFinite(pnl)) continue;
+        if (pnl < 0) streak += 1;
+        else break;
+        if (streak >= limit) return streak;
+      }
+      return streak;
+    }
+
+    function _activateCrashGuard(reason) {
+      state.crashGuardUntilMs = Date.now() + CRASH_GUARD_COOLDOWN_MS;
+      state.crashGuardReason = String(reason || "崩盤保護");
+      savePrefs();
+    }
+
+    function checkCrashGuard(data, signal, { activate = false } = {}) {
+      const now = Date.now();
+      if (Number(state.crashGuardUntilMs) > now) {
+        const mins = Math.ceil((Number(state.crashGuardUntilMs) - now) / 60000);
+        return { blocked: true, reason: `崩盤保護冷卻中(${mins}m): ${state.crashGuardReason || "風險過高"}` };
+      }
+
+      const l = data?.latest || {};
+      const spreadBps = Math.abs(Number(l.spread_bps || 0));
+      const confidence = Number(signal?.confidence || 0);
+      const dd4h = _equityDropPct(4);
+      const lossStreak = _recentLossStreak(3);
+      let reason = "";
+
+      if (dd4h <= -0.008) reason = `4h回撤過大(${fmt(dd4h * 100, 2)}%)`;
+      else if (lossStreak >= 3) reason = `連續虧損 ${lossStreak} 筆`;
+      else if (spreadBps >= 6 && confidence < 0.30) reason = `高摩擦低信心(spread ${fmt(spreadBps, 2)}bp)`;
+
+      if (!reason) return { blocked: false, reason: "none" };
+      if (activate) _activateCrashGuard(reason);
+      const mins = Math.ceil(CRASH_GUARD_COOLDOWN_MS / 60000);
+      return { blocked: true, reason: `崩盤保護啟動(${mins}m): ${reason}` };
+    }
+
     function suggestedLeverage(data, signal, style) {
-      const maxLev = Math.max(1, num($("maxLev").value) || 1);
       const profile = RISK[state.risk] || RISK.neutral;
       const styleCap = RISK[style.key]?.maxScore || RISK.neutral.maxScore;
       const raw = 1 + signal.confidence * styleCap * profile.mult;
-      return Math.max(1, Math.min(maxLev, raw));
+      return capLeverage(raw);
+    }
+
+    function resolveExecutionLeverage({ ai = false, signal = null, style = null } = {}) {
+      const data = currentData();
+      const s = signal || computeSignal(data);
+      const st = style || classifyStyle(data, s);
+      const fallback = suggestedLeverage(data, s, st);
+      const v7 = currentV7Decision();
+      if (ai && v7?.ok && finite(v7.suggested_leverage)) {
+        return capLeverage(v7.suggested_leverage, fallback);
+      }
+      return capLeverage(fallback);
+    }
+
+    async function fetchJsonSafe(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+      const text = await res.text();
+      if (!res.ok) {
+        const brief = text.replace(/\s+/g, " ").trim().slice(0, 120);
+        throw new Error(`HTTP ${res.status} ${res.statusText}${brief ? ` | ${brief}` : ""}`);
+      }
+      if (!contentType.includes("application/json")) {
+        const brief = text.replace(/\s+/g, " ").trim().slice(0, 120);
+        throw new Error(`API 回傳非 JSON（可能連到錯誤 server）：${brief || "empty body"}`);
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        const brief = text.replace(/\s+/g, " ").trim().slice(0, 120);
+        throw new Error(`JSON 解析失敗：${brief || "invalid json"}`);
+      }
     }
 
     async function loadSignal(symbolKey) {
       try {
-        const res = await fetch(`/api/signal/${SYMBOLS[symbolKey].pair}`, { cache: "no-store" });
-        state.data[symbolKey] = await res.json();
+        state.data[symbolKey] = await fetchJsonSafe(`/api/signal/${SYMBOLS[symbolKey].pair}`);
       } catch (err) {
         state.data[symbolKey] = { ok: false, error: err.message };
       }
     }
 
+    async function loadRuleBrain(symbolKey) {
+      try {
+        state.ruleBrains[symbolKey] = await fetchJsonSafe(`/api/rule-brain/${SYMBOLS[symbolKey].pair}`);
+      } catch (err) {
+        state.ruleBrains[symbolKey] = { ok: false, error: err.message };
+      }
+    }
+
+    async function loadV7Decision(symbolKey) {
+      try {
+        const sec = Math.max(60, Number(state.klineIntervalSec) || 3600);
+        state.v7Decisions[symbolKey] = await fetchJsonSafe(`/api/model/ai-decision/${SYMBOLS[symbolKey].pair}?interval_sec=${sec}&model_mode=v10`);
+      } catch (err) {
+        state.v7Decisions[symbolKey] = { ok: false, error: err.message };
+      }
+    }
+
+    async function loadStrategyParams(symbolKey) {
+      try {
+        const sec = Math.max(60, Number(state.klineIntervalSec) || 3600);
+        state.strategy[symbolKey] = await fetchJsonSafe(`/api/strategy/params/${SYMBOLS[symbolKey].pair}?interval_sec=${sec}&model_mode=v10`);
+      } catch (err) {
+        state.strategy[symbolKey] = { ok: false, error: err.message };
+      }
+    }
+
+    async function loadNightlyStatus() {
+      const urls = ["/api/pipeline/nightly-status", "/api/nightly-status", "/api/pipeline/status"];
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          state.nightly = await fetchJsonSafe(url);
+          return;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      state.nightly = { ok: false, error: String(lastErr?.message || "nightly status unavailable") };
+    }
+
     async function loadIndicators(symbolKey) {
       try {
-        const res = await fetch(`/api/trading/indicators/${SYMBOLS[symbolKey].pair}?interval=60&limit=21600`, { cache: "no-store" });
-        state.indicators[symbolKey] = await res.json();
+        const sec = Math.max(60, Number(state.klineIntervalSec) || 60);
+        state.indicators[symbolKey] = await fetchJsonSafe(`/api/trading/indicators/${SYMBOLS[symbolKey].pair}?interval=${sec}&limit=${KLINE_LIMIT}`);
       } catch (err) {
         state.indicators[symbolKey] = { ok: false, error: err.message };
       }
@@ -989,7 +1731,7 @@
 
     async function loadOkxStatus() {
       try {
-        state.okx = await (await fetch("/api/okx/status", { cache: "no-store" })).json();
+        state.okx = await fetchJsonSafe("/api/okx/status");
       } catch (err) {
         state.okx = { configured: false, demo: true, live_enabled: false, error: err.message };
       }
@@ -998,21 +1740,128 @@
 
     async function loadAccount() {
       try {
-        const res = await fetch("/api/okx/account", { cache: "no-store" });
-        state.account = await res.json();
+        state.account = await fetchJsonSafe("/api/okx/account");
       } catch (err) {
         state.account = { error: err.message };
       }
-      recordDailyEquitySnapshot();
+      recordHourlyEquitySnapshot();
       renderOkx();
       renderPositions();
       renderEquityChart();
     }
 
+    async function loadKeywordNews() {
+      try {
+        state.keywordNews = await fetchJsonSafe("/api/news/keywords");
+      } catch (err) {
+        state.keywordNews = { ok: false, grouped: [], items: [], error: err.message };
+      }
+      renderKeywordNews();
+    }
+
+    function renderKeywordNews() {
+      const box = $("keywordNewsList");
+      if (!box) return;
+      const payload = state.keywordNews || {};
+      const groups = Array.isArray(payload.grouped) ? payload.grouped : [];
+      const rows = [];
+      groups.forEach((g) => {
+        const kw = String(g.keyword || "").trim();
+        const items = Array.isArray(g.items) ? g.items.slice(0, 2) : [];
+        items.forEach((item) => {
+          rows.push({
+            keyword: kw,
+            title: String(item.title || "").trim(),
+            link: String(item.link || "").trim(),
+            source: String(item.source || "").trim(),
+          });
+        });
+      });
+      if (!rows.length) {
+        box.innerHTML = `<div class="empty" style="min-height:72px">目前沒有新聞</div>`;
+        return;
+      }
+      box.innerHTML = rows.map((r) => `
+        <div class="news-item">
+          <a href="${r.link || "#"}" target="_blank" rel="noopener noreferrer">[${r.keyword}] ${r.title || "-"}</a>
+          <div class="news-meta">${r.source || ""}</div>
+        </div>
+      `).join("");
+    }
+
+    function buildBullBearReasons(data, signal) {
+      const bull = [];
+      const bear = [];
+      const l = data?.latest || {};
+      const avg1h = data?.averages_1h || {};
+      const v10 = currentV7Decision();
+      const cV10 = v10?.components?.v10 || null;
+      const cV13 = v10?.components?.v13 || null;
+
+      const spread = Math.abs(Number(l.spread_bps || 0));
+      const obi = finite(avg1h.obi) ? Number(avg1h.obi) : Number(l.obi || 0);
+      const depth = finite(avg1h.depth_imbalance) ? Number(avg1h.depth_imbalance) : Number(l.depth_imbalance || 0);
+      const buyPressure = finite(avg1h.buy_pressure) ? Number(avg1h.buy_pressure) : Number(l.buy_pressure ?? 0.5);
+
+      if (v10?.ok) {
+        const pLong = Number(v10.prob_long);
+        const pShort = Number(v10.prob_short);
+        const conf = Number(v10.confidence);
+        if (finite(pLong) && pLong > 0.55) bull.push(`V10 看漲機率偏高（${pct(pLong, 1)}）`);
+        if (finite(pShort) && pShort > 0.55) bear.push(`V10 看跌機率偏高（${pct(pShort, 1)}）`);
+        if (finite(conf) && conf < 0.55) bear.push(`模型信心偏弱（${pct(conf, 1)}）`);
+        if (cV10) {
+          const d = String(cV10.direction || "flat").toLowerCase();
+          const cc = Number(cV10.confidence || 0);
+          if (d === "long") bull.push(`V10 趨勢腦偏多（${pct(cc, 1)}）`);
+          else if (d === "short") bear.push(`V10 趨勢腦偏空（${pct(cc, 1)}）`);
+          else bear.push(`V10 趨勢腦觀望（${pct(cc, 1)}）`);
+        }
+        if (cV13) {
+          const d = String(cV13.direction || "flat").toLowerCase();
+          const cc = Number(cV13.confidence || 0);
+          if (d === "long") bull.push(`V13 微結構腦偏多（${pct(cc, 1)}）`);
+          else if (d === "short") bear.push(`V13 微結構腦偏空（${pct(cc, 1)}）`);
+          else bear.push(`V13 微結構腦觀望（${pct(cc, 1)}）`);
+        }
+      }
+
+      if (buyPressure > 0.55) bull.push(`1h平均買方壓力較強（${pct(buyPressure, 1)}）`);
+      if (buyPressure < 0.45) bear.push(`1h平均賣方壓力較強（${pct(1 - buyPressure, 1)}）`);
+
+      if (obi > 0.08) bull.push(`1h平均 OBI 為正（${pct(obi, 1)}），買盤偏厚`);
+      if (obi < -0.08) bear.push(`1h平均 OBI 為負（${pct(obi, 1)}），賣盤偏厚`);
+
+      if (depth > 0.1) bull.push(`1h平均深度不平衡偏多（${pct(depth, 1)}）`);
+      if (depth < -0.1) bear.push(`1h平均深度不平衡偏空（${pct(depth, 1)}）`);
+
+      if (spread > 2.5) bear.push(`價差偏大（${fmt(spread, 3)} bp），交易摩擦上升`);
+      if (spread > 0 && spread < 1.0) bull.push(`價差較小（${fmt(spread, 3)} bp），成交條件較佳`);
+
+      if (signal?.signal === "看漲" && signal.confidence >= 0.28) bull.push(`短線訊號轉多（信心 ${pct(signal.confidence, 1)}）`);
+      if (signal?.signal === "看跌" && signal.confidence >= 0.28) bear.push(`短線訊號轉空（信心 ${pct(signal.confidence, 1)}）`);
+
+      if (!bull.length) bull.push("目前偏多訊號不足，先觀察突破延續。");
+      if (!bear.length) bear.push("目前偏空訊號不足，先觀察轉弱確認。");
+
+      return {
+        bull: bull.slice(0, 4),
+        bear: bear.slice(0, 4),
+      };
+    }
+
+    function renderBullBearReasons(data, signal) {
+      const bullEl = $("bullReasonsList");
+      const bearEl = $("bearReasonsList");
+      if (!bullEl || !bearEl) return;
+      const reasons = buildBullBearReasons(data, signal);
+      bullEl.innerHTML = reasons.bull.map((x) => `<li>${x}</li>`).join("");
+      bearEl.innerHTML = reasons.bear.map((x) => `<li>${x}</li>`).join("");
+    }
+
     async function loadPendingOrders() {
       try {
-        const res = await fetch("/api/okx/orders", { cache: "no-store" });
-        const payload = await res.json();
+        const payload = await fetchJsonSafe("/api/okx/orders");
         state.pendingOrders = payload.data || [];
       } catch {
         state.pendingOrders = [];
@@ -1023,18 +1872,19 @@
     function renderTop(data, signal, style, lev, block) {
       const l = data.latest || {};
       const digits = priceDigits();
+      const aiView = aiViewModel(signal, lev, style);
       $("lastPrice").textContent = fmt(l.price, digits);
       $("bidAsk").textContent = `Bid ${fmt(l.best_bid, digits)} / Ask ${fmt(l.best_ask, digits)}`;
-      $("signalText").textContent = signal.signal;
-      $("signalText").className = `value ${signal.signal === "看漲" ? "green" : signal.signal === "看跌" ? "red" : "amber"}`;
-      $("signalAction").textContent = signal.action;
-      $("confidenceText").textContent = pct(signal.confidence, 1);
-      $("execLev").textContent = `${fmt(lev, 2)}x`;
-      $("levExplain").textContent = `${RISK[state.risk].label} + ${style.label}`;
+      $("signalText").textContent = aiView.signalText;
+      $("signalText").className = `value ${aiView.signalText === "看漲" ? "green" : aiView.signalText === "看跌" ? "red" : "amber"}`;
+      $("signalAction").textContent = aiView.actionText;
+      $("confidenceText").textContent = pct(aiView.confidence, 1);
+      $("execLev").textContent = `${fmt(aiView.leverage, 2)}x`;
+      $("levExplain").textContent = aiView.levExplain;
       $("buyPressure").textContent = pct(l.buy_pressure, 1);
       $("dbRows").textContent = compact(data.total_rows);
       $("dbSize").textContent = `${fmt(data.db_size_mb, 1)} MB`;
-      $("tradeState").textContent = block === "none" && signal.signal !== "觀望" ? "可交易" : block;
+      $("tradeState").textContent = block === "none" && aiView.signalText !== "觀望" ? "可交易" : block;
       $("marketAge").textContent = finite(data.ts) ? `${Math.max(0, Date.now() / 1000 - data.ts).toFixed(1)}s old` : "等待中";
       const accountRoot = state.account?.balances?.data?.[0] || {};
       const usdt = okxUsdtBalance();
@@ -1068,35 +1918,141 @@
       $("margin").textContent = finite(notional) ? `${money(notional / lev)} | AI 上限 ${money(aiCapital)}` : "-";
       $("stopPrice").textContent = fmt(stop, priceDigits());
       $("tpPrice").textContent = fmt(take, priceDigits());
-      $("paperSubmit").className = state.side === "buy" ? "submit-buy" : "submit-sell";
       $("riskBlock").textContent = block;
       $("riskBlock").className = block === "none" ? "green" : "amber";
     }
 
     function renderRisk(data, signal, style) {
       const l = data.latest || {};
+      const v7 = currentV7Decision();
+      const cV10 = v7?.components?.v10 || null;
+      const cV13 = v7?.components?.v13 || null;
+      const st = currentStrategy();
+      const aiView = aiViewModel(signal, suggestedLeverage(data, signal, style), style);
       $("styleBadge").textContent = style.label;
       $("styleBadge").className = `style-badge ${style.key}`;
-      $("styleReason").textContent = `${style.reason}; score ${style.score.toFixed(2)}`;
-      $("confDetail").textContent = `${pct(signal.confidence, 1)} | score ${signal.score.toFixed(2)}`;
-      $("confMeter").style.width = `${Math.max(4, signal.confidence * 100)}%`;
-      $("confMeter").style.background = signal.signal === "看漲" ? "var(--green)" : signal.signal === "看跌" ? "var(--red)" : "var(--amber)";
+      const isV10Style = String(currentV7Decision()?.model_name || "").toLowerCase().includes("v10");
+      $("styleReason").textContent = isV10Style
+        ? style.reason
+        : `${style.reason}; score ${style.score.toFixed(2)}`;
+      $("confDetail").textContent = aiView.source === "model"
+        ? `${pct(aiView.confidence, 1)} | ${String(v7?.model_name || "AI").toUpperCase()}`
+        : `${pct(signal.confidence, 1)} | score ${signal.score.toFixed(2)}`;
+      $("confMeter").style.width = `${Math.max(4, aiView.confidence * 100)}%`;
+      $("confMeter").style.background = aiView.signalText === "看漲" ? "var(--green)" : aiView.signalText === "看跌" ? "var(--red)" : "var(--amber)";
       $("spread").textContent = finite(l.spread_bps) ? `${fmt(l.spread_bps, 3)} bp` : "-";
       $("obi").textContent = pct(l.obi, 2);
       $("depthImb").textContent = pct(l.depth_imbalance, 2);
+      if (v7?.ok) {
+        if (cV10) {
+          const d10 = String(cV10.direction || "flat").toUpperCase();
+          const a10 = Boolean(cV10.allowed);
+          $("ruleBrain").textContent = `${d10} ${pct(cV10.confidence || 0, 0)}${a10 ? "" : " HOLD"}`;
+          $("ruleBrain").className = d10 === "LONG" ? "green" : d10 === "SHORT" ? "red" : "amber";
+        } else {
+          const d10 = String(v7.direction || "flat").toUpperCase();
+          const a10 = Boolean(v7.allowed);
+          $("ruleBrain").textContent = `${d10} ${pct(v7.confidence || 0, 0)}${a10 ? "" : " HOLD"}`;
+          $("ruleBrain").className = d10 === "LONG" ? "green" : d10 === "SHORT" ? "red" : "amber";
+        }
+        if (cV13) {
+          const d13 = String(cV13.direction || "flat").toUpperCase();
+          const a13 = Boolean(cV13.allowed);
+          $("modelV13").textContent = `${d13} ${pct(cV13.confidence || 0, 0)}${a13 ? "" : " HOLD"}`;
+          $("modelV13").className = d13 === "LONG" ? "green" : d13 === "SHORT" ? "red" : "amber";
+        } else {
+          $("modelV13").textContent = `停用(v10模式)`;
+          $("modelV13").className = "amber";
+        }
+      } else {
+        const reason = String(v7?.error || "v10 尚未可用");
+        $("ruleBrain").textContent = `V10 離線：${reason}`;
+        $("ruleBrain").className = "amber";
+        $("modelV13").textContent = `V13 離線`;
+        $("modelV13").className = "amber";
+      }
+
+      if (st?.ok) {
+        const p = st.params || {};
+        const generated = p.generated_at_utc ? new Date(String(p.generated_at_utc)).toLocaleString() : "未校準";
+        $("strategyUpdated").textContent = generated;
+        $("strategyGate").textContent = st.allowed ? "允許" : `阻擋: ${(st.reasons || [])[0] || "gate"}`;
+        $("strategyGate").className = st.allowed ? "green" : "amber";
+        $("strategyLimits").textContent = `maxLev ${p.max_leverage ?? "-"} | th ${fmt(p.active_conf_threshold, 2)}`;
+      } else {
+        $("strategyUpdated").textContent = st?.error ? `讀取失敗` : "未載入";
+        $("strategyGate").textContent = "等待中";
+        $("strategyGate").className = "amber";
+        $("strategyLimits").textContent = "-";
+      }
+    }
+
+    function renderNightlyBanner() {
+      const n = currentNightly();
+      const bar = $("nightlyProgressBar");
+      if (!n?.ok) {
+        $("nightlyStatusText").textContent = "00:30 任務：讀取失敗";
+        $("nightlyStepText").textContent = n?.error ? `錯誤 ${n.error}` : "步驟 -";
+        $("nightlyPctText").textContent = "0%";
+        $("nightlyMetaText").textContent = "最近執行：-";
+        if (bar) bar.style.width = "0%";
+        return;
+      }
+      const cur = Number(n.step_current || 0);
+      const total = Math.max(1, Number(n.step_total || 4));
+      const isRunning = Boolean(n.running);
+      let pctVal = Math.max(0, Math.min(100, Math.round((cur / total) * 100)));
+      if (isRunning && cur === 0) pctVal = 12;
+      const runKey = `${Number(n.last_run || 0)}|${String(n.last_log || "")}`;
+      if (!isRunning) {
+        state.nightlyProgressCache.runKey = runKey;
+        state.nightlyProgressCache.pct = pctVal;
+      } else if (state.nightlyProgressCache.runKey !== runKey) {
+        state.nightlyProgressCache.runKey = runKey;
+        state.nightlyProgressCache.pct = pctVal;
+      } else {
+        pctVal = Math.max(Number(state.nightlyProgressCache.pct || 0), pctVal);
+        state.nightlyProgressCache.pct = pctVal;
+      }
+      if (n.finished && n.success) {
+        pctVal = 100;
+        state.nightlyProgressCache.pct = 100;
+      }
+      $("nightlyStatusText").textContent = `00:30 任務：${String(n.status || "等待中")}`;
+      $("nightlyStepText").textContent = `步驟 ${cur}/${total} ${String(n.step_title || "").trim()}`;
+      $("nightlyPctText").textContent = `${pctVal}%`;
+      const runText = finite(n.last_run) ? new Date(Number(n.last_run) * 1000).toLocaleString() : "-";
+      $("nightlyMetaText").textContent = `最近執行：${runText}`;
+      if (bar) {
+        bar.style.width = `${pctVal}%`;
+        bar.classList.toggle("running", isRunning);
+      }
+    }
+
+    async function runStrategyPrecheck({ side, leverage, aiOrder, lockedAi = null }) {
+      const sec = Math.max(60, Number(state.klineIntervalSec) || 3600);
+      const payload = {
+        symbol: SYMBOLS[state.symbol].pair,
+        side,
+        leverage: Math.max(1, Number(leverage) || 1),
+        ai_order: Boolean(aiOrder),
+        interval_sec: sec,
+        model_mode: "v10",
+      };
+      if (lockedAi && typeof lockedAi === "object") payload.locked_ai = lockedAi;
+      const res = await fetch("/api/trading/precheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
     }
 
     function techChartIds() {
-      return ["klineChart", "macdChart", "rsiChart", "atrChart"];
+      return [];
     }
 
     function snapshotChartRange() {
-      const plot = document.getElementById("klineChart");
-      const range = plot?._fullLayout?.xaxis?.range;
-      if (Array.isArray(range) && range.length === 2) {
-        state.chartRange = [range[0], range[1]];
-        localStorage.setItem("tradingChartRange.v1", JSON.stringify(state.chartRange));
-      }
     }
 
     function setChartsUpdating(on) {
@@ -1160,6 +2116,60 @@
       };
     }
 
+    function martingaleOverlay(xValues) {
+      if (!Array.isArray(xValues) || xValues.length < 2) {
+        return { shapes: [], annotations: [] };
+      }
+      const cfg = martingaleConfig();
+      if (!cfg.enabled || cfg.maxStep <= 0) {
+        return { shapes: [], annotations: [] };
+      }
+      const entry = getEntry();
+      if (!finite(entry) || entry <= 0) {
+        return { shapes: [], annotations: [] };
+      }
+      const basePrincipal = getEffectivePrincipal({ aiCapped: true, useMartingale: false });
+      const stepPct = Math.max(0.001, (Math.max(0.05, num($("slPct").value) || 1.0)) / 100);
+      const x0 = xValues[0];
+      const x1 = xValues[xValues.length - 1];
+      const isBuy = state.side === "buy";
+      const shapes = [];
+      const annotations = [];
+      for (let i = 0; i <= cfg.maxStep; i += 1) {
+        const price = isBuy ? entry * (1 - stepPct * i) : entry * (1 + stepPct * i);
+        if (!finite(price) || price <= 0) continue;
+        const levelPrincipal = Number(basePrincipal) * Math.pow(cfg.multiplier, i);
+        const isBase = i === 0;
+        const lineColor = isBase ? "#24d18f" : "#f4bf55";
+        shapes.push({
+          type: "line",
+          xref: "x",
+          yref: "y",
+          x0,
+          x1,
+          y0: price,
+          y1: price,
+          line: { color: lineColor, width: isBase ? 1.8 : 1.2, dash: isBase ? "solid" : "dot" },
+          opacity: isBase ? 0.9 : 0.62,
+        });
+        annotations.push({
+          x: x1,
+          y: price,
+          xref: "x",
+          yref: "y",
+          xanchor: "right",
+          yanchor: "bottom",
+          showarrow: false,
+          text: `M${i} ${money(levelPrincipal)}`,
+          font: { size: 10, color: lineColor },
+          bgcolor: "rgba(17,27,38,0.75)",
+          bordercolor: "rgba(255,255,255,0.12)",
+          borderwidth: 1,
+        });
+      }
+      return { shapes, annotations };
+    }
+
     function drawCharts(data, signal) {
       const chartData = state.indicators[state.symbol] || {};
       const candles = chartData.candles || [];
@@ -1167,86 +2177,54 @@
 
       snapshotChartRange();
       setChartsUpdating(true);
+      updateChartControls();
+      refreshTradingViewFrame();
 
-      const x = candles.map((r) => new Date(Number(r.time) * 1000));
       const ids = techChartIds();
-      const config = { responsive: true, displayModeBar: true, scrollZoom: true };
-      const quietConfig = { responsive: true, displayModeBar: false, scrollZoom: true };
-
-      Plotly.react("klineChart", [{
-        x,
-        open: candles.map((r) => r.open),
-        high: candles.map((r) => r.high),
-        low: candles.map((r) => r.low),
-        close: candles.map((r) => r.close),
-        type: "candlestick",
-        name: "Kline",
-        increasing: { line: { color: "#24d18f" }, fillcolor: "#165f43" },
-        decreasing: { line: { color: "#ff6478" }, fillcolor: "#713042" },
-      }], {
-        ...chartLayout(`${SYMBOLS[state.symbol].pair} Kline`, "Price", 420),
-        xaxis: { ...chartLayout("", "", 420).xaxis, rangeslider: { visible: false } },
-        dragmode: "pan",
-      }, config).then(() => bindChartSync("klineChart"));
-
-      const macd = chartData.macd || [];
-      const mx = macd.map((r) => new Date(Number(r.time) * 1000));
-      Plotly.react("macdChart", [
-        {
-          x: mx,
-          y: macd.map((r) => r.hist),
-          type: "bar",
-          marker: { color: macd.map((r) => Number(r.hist || 0) >= 0 ? "#24d18f" : "#ff6478") },
-          name: "Hist",
-        },
-        {
-          x: mx,
-          y: macd.map((r) => r.macd),
-          type: "scatter",
-          mode: "lines",
-          line: { color: "#52a8ff", width: 1.5 },
-          name: "MACD",
-        },
-        {
-          x: mx,
-          y: macd.map((r) => r.signal),
-          type: "scatter",
-          mode: "lines",
-          line: { color: "#f4bf55", width: 1.5 },
-          name: "Signal",
-        },
-      ], chartLayout("MACD", "MACD", 190), quietConfig).then(() => bindChartSync("macdChart"));
-
-      const rsi = chartData.rsi || [];
-      Plotly.react("rsiChart", [{
-        x: rsi.map((r) => new Date(Number(r.time) * 1000)),
-        y: rsi.map((r) => r.value),
-        type: "scatter",
-        mode: "lines",
-        line: { color: "#b58cff", width: 2 },
-        name: "RSI",
-      }], {
-        ...chartLayout("RSI", "RSI", 190),
-        yaxis: { title: "RSI", gridcolor: "#28394c", range: [0, 100] },
-        shapes: [
-          { type: "line", xref: "paper", x0: 0, x1: 1, y0: 70, y1: 70, line: { color: "#ff6478", width: 1, dash: "dot" } },
-          { type: "line", xref: "paper", x0: 0, x1: 1, y0: 30, y1: 30, line: { color: "#24d18f", width: 1, dash: "dot" } },
-        ],
-      }, quietConfig).then(() => bindChartSync("rsiChart"));
-
-      const atr = chartData.atr || [];
-      Plotly.react("atrChart", [{
-        x: atr.map((r) => new Date(Number(r.time) * 1000)),
-        y: atr.map((r) => r.value),
-        type: "scatter",
-        mode: "lines",
-        line: { color: "#45d8d2", width: 2 },
-        fill: "tozeroy",
-        fillcolor: "rgba(69,216,210,.12)",
-        name: "ATR",
-      }], chartLayout("ATR", "ATR", 190), quietConfig).then(() => bindChartSync("atrChart"));
+      const quietConfig = { responsive: true, displayModeBar: false, scrollZoom: false };
 
       const fg = chartData.fear_greed || [];
+      const fgLatest = fg.length ? fg[fg.length - 1] : null;
+      const fgValue = finite(fgLatest?.value) ? Number(fgLatest.value) : null;
+      const fgLabel = String(fgLatest?.label || "").trim();
+      const fgTime = fgLatest?.time ? new Date(Number(fgLatest.time) * 1000) : null;
+
+      const fgColor = !finite(fgValue) ? "#f4bf55"
+        : fgValue <= 25 ? "#ff6478"
+        : fgValue <= 45 ? "#f19a4a"
+        : fgValue <= 55 ? "#f4bf55"
+        : fgValue <= 75 ? "#95d66f"
+        : "#24d18f";
+
+      $("fgTodayValue").textContent = finite(fgValue) ? `${fmt(fgValue, 0)} / 100` : "-";
+      $("fgTodayClass").textContent = fgLabel || "等待資料";
+      $("fgTodayTime").textContent = fgTime ? `更新：${fgTime.toLocaleString()}` : "更新：-";
+
+      Plotly.react("fearGreedGauge", [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: finite(fgValue) ? fgValue : 50,
+        number: { suffix: " / 100", font: { size: 32, color: "#edf5ff" } },
+        title: { text: "本日情緒", font: { size: 14, color: "#8fa4b9" } },
+        gauge: {
+          axis: { range: [0, 100], tickcolor: "#8fa4b9" },
+          bar: { color: fgColor, thickness: 0.25 },
+          bgcolor: "#0f1720",
+          borderwidth: 0,
+          steps: [
+            { range: [0, 25], color: "#5b2530" },
+            { range: [25, 45], color: "#5e3f29" },
+            { range: [45, 55], color: "#4f4630" },
+            { range: [55, 75], color: "#2f563d" },
+            { range: [75, 100], color: "#1f5b4f" },
+          ],
+        },
+      }], {
+        paper_bgcolor: "#111b26",
+        plot_bgcolor: "#111b26",
+        margin: { l: 8, r: 8, t: 26, b: 8 },
+        height: 190,
+      }, { responsive: true, displayModeBar: false, scrollZoom: false });
       Plotly.react("fearGreedChart", [{
         x: fg.map((r) => new Date(Number(r.time) * 1000)),
         y: fg.map((r) => r.value),
@@ -1287,88 +2265,222 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function todayKey() {
-      return new Date().toLocaleDateString("en-CA");
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function dateKeyLocal(ts) {
+      const d = new Date(Number(ts));
+      if (!Number.isFinite(d.getTime())) return "";
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function hourKey(ts = Date.now()) {
+      const d = new Date(ts);
+      d.setMinutes(0, 0, 0);
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:00`;
+    }
+
+    function equityRowKey(row) {
+      return row.hour || row.date || "";
     }
 
     function saveEquitySnapshots() {
-      localStorage.setItem(EQUITY_KEY, JSON.stringify(state.equitySnapshots.slice(-730)));
-      saveServerState({ equitySnapshots: state.equitySnapshots.slice(-730) });
+      const rows = normalizeEquitySnapshots(state.equitySnapshots).slice(-8760);
+      state.equitySnapshots = rows;
+      localStorage.setItem(EQUITY_KEY, JSON.stringify(rows));
+      saveServerState({ equitySnapshots: rows });
     }
 
-    function recordDailyEquitySnapshot() {
+    function recordHourlyEquitySnapshot() {
       const equity = getAccountEquity();
       if (!finite(equity) || equity <= 0) return;
       const usdt = getAvailableUsdt();
-      const key = todayKey();
-      const existing = state.equitySnapshots.find((row) => row.date === key);
+      const key = hourKey();
       const payload = {
-        date: key,
+        hour: key,
         ts: Date.now(),
         equity,
         usdtAvailable: finite(usdt) ? usdt : null,
         demo: Boolean(state.okx?.demo),
       };
-      if (existing) Object.assign(existing, payload);
-      else state.equitySnapshots.push(payload);
-      state.equitySnapshots.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      state.equitySnapshots.push(payload);
+      state.equitySnapshots = normalizeEquitySnapshots(state.equitySnapshots);
       saveEquitySnapshots();
     }
 
     function renderEquityChart() {
-      const rows = state.equitySnapshots || [];
-      $("equityCount").textContent = `${rows.length} days`;
+      const rows = normalizeEquitySnapshots(state.equitySnapshots || []);
+      state.equitySnapshots = rows;
+      $("equityCount").textContent = `${rows.length} 小時`;
+      const xValues = rows.map((row) => {
+        const parsed = Date.parse(`${equityRowKey(row)}:00`);
+        return new Date(Number.isFinite(parsed) ? parsed : Number(row.ts || Date.now()));
+      });
+      const yValues = rows.map((row) => row.equity);
+      const yMin = yValues.length ? Math.min(...yValues) : NaN;
+      const yMax = yValues.length ? Math.max(...yValues) : NaN;
+      const ySpan = finite(yMin) && finite(yMax) ? (yMax - yMin) : NaN;
+      const yCenter = finite(yMin) && finite(yMax) ? (yMin + yMax) / 2 : NaN;
+      const yPad = !finite(ySpan)
+        ? NaN
+        : Math.max(
+            ySpan * 0.25,
+            Math.abs(yCenter || 1) * 0.003,
+            8
+          );
+      const yRange = finite(yMin) && finite(yMax) && finite(yPad)
+        ? [Math.max(0, yMin - yPad), yMax + yPad]
+        : null;
+      const singlePoint = xValues.length === 1 ? xValues[0] : null;
+      const singlePointRange = singlePoint
+        ? [
+            new Date(singlePoint.getTime() - 30 * 60 * 1000),
+            new Date(singlePoint.getTime() + 30 * 60 * 1000),
+          ]
+        : null;
       Plotly.react("equityChart", [{
-        x: rows.map((row) => row.date),
-        y: rows.map((row) => row.equity),
+        x: xValues,
+        y: yValues,
         type: "scatter",
         mode: "lines+markers",
         line: { color: "#24d18f", width: 2 },
         marker: { color: "#24d18f", size: 5 },
-        fill: "tozeroy",
-        fillcolor: "rgba(36,209,143,.10)",
+        fill: "none",
         text: rows.map((row) => finite(row.usdtAvailable) ? `USDT 可用 ${money(row.usdtAvailable)}` : ""),
-        hovertemplate: "%{x}<br>總資產: $%{y:,.2f}<br>%{text}<extra></extra>",
+        hovertemplate: "%{x|%Y-%m-%d %H:%M}<br>總資產: $%{y:,.2f}<br>%{text}<extra></extra>",
       }], {
-        title: { text: "每日總資產", font: { color: "#edf5ff", size: 14 } },
+        title: { text: "每小時總資產", font: { color: "#edf5ff", size: 14 } },
         paper_bgcolor: "#111b26",
         plot_bgcolor: "#111b26",
         font: { color: "#edf5ff" },
         margin: { l: 54, r: 14, t: 42, b: 34 },
         height: 220,
-        uirevision: "daily-equity",
-        xaxis: { gridcolor: "#28394c", zerolinecolor: "#28394c", type: "date" },
-        yaxis: { title: "USD", gridcolor: "#28394c", zerolinecolor: "#28394c" },
+        uirevision: "hourly-equity",
+        xaxis: {
+          gridcolor: "#28394c",
+          zerolinecolor: "#28394c",
+          type: "date",
+          tickformat: "%m/%d %H:%M",
+          tickangle: -20,
+          automargin: true,
+          ...(singlePointRange ? { range: singlePointRange, autorange: false } : { autorange: true }),
+        },
+        yaxis: {
+          title: "USD",
+          gridcolor: "#28394c",
+          zerolinecolor: "#28394c",
+          ...(yRange ? { range: yRange, autorange: false } : { autorange: true }),
+        },
       }, { responsive: true, displayModeBar: false });
     }
 
     function saveTradeRecords() {
-      localStorage.setItem(RECORD_KEY, JSON.stringify(state.tradeRecords.slice(0, 500)));
-      saveServerState({ tradeRecords: state.tradeRecords.slice(0, 500) });
+      localStorage.setItem(RECORD_KEY, JSON.stringify(state.tradeRecords.slice(0, 5000)));
+      saveServerState({ tradeRecords: state.tradeRecords.slice(0, 5000) });
     }
 
     function addTradeRecord(record) {
+      const fee = estimatedFeeFromRecord(record);
+      const grossPnl = grossPnlFromRecord(record);
+      const netPnl = grossPnl - fee;
       state.tradeRecords.unshift({
         id: record.id || crypto.randomUUID(),
         ts: record.ts || Date.now(),
         env: state.okx?.demo ? "模擬盤" : "目前環境",
         ...record,
+        fee,
+        feeBps: finite(record.feeBps) ? Number(record.feeBps) : inferFeeBps(record.ordType || record.type),
+        pnl: grossPnl,
+        net_pnl: netPnl,
       });
-      state.tradeRecords = state.tradeRecords.slice(0, 500);
+      state.tradeRecords = state.tradeRecords.slice(0, 5000);
       saveTradeRecords();
       renderTradeRecords();
     }
 
+    function paperOrderPnl(order) {
+      const live = state.data[order.symbol]?.latest?.price;
+      if (!finite(live)) return NaN;
+      return (Number(live) - Number(order.entry)) * Number(order.qty) * (order.side === "buy" ? 1 : -1);
+    }
+
     function renderTradeRecords() {
-      $("tradeRecordCount").textContent = `${state.tradeRecords.length} records`;
-      if (!state.tradeRecords.length) {
-        $("tradeRecords").innerHTML = `<div class="empty">尚無交易紀錄</div>`;
+      const scopedRecords = state.tradeRecords.filter((r) => Number.isFinite(Number(r?.ts)));
+      const pnlSum = scopedRecords.reduce((acc, r) => acc + netPnlFromRecord(r), 0);
+      const dailyMap = new Map();
+      scopedRecords.forEach((r) => {
+        const key = dateKeyLocal(r.ts);
+        if (!key) return;
+        const base = dailyMap.get(key) || { date: key, count: 0, pnl: 0 };
+        base.count += 1;
+        base.pnl += netPnlFromRecord(r);
+        dailyMap.set(key, base);
+      });
+      const dailyRows = Array.from(dailyMap.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      const selectedDate = String($("tradeDateFilter")?.value || state.tradeRecordDate || "");
+      state.tradeRecordDate = selectedDate;
+      const filteredRecords = selectedDate
+        ? scopedRecords.filter((r) => dateKeyLocal(r.ts) === selectedDate)
+        : scopedRecords;
+      const selectedDaily = selectedDate
+        ? (dailyMap.get(selectedDate) || { date: selectedDate, count: 0, pnl: 0 })
+        : { date: "全部", count: scopedRecords.length, pnl: pnlSum };
+      const selectedPnl = Number(selectedDaily.pnl || 0);
+      const todayKey = dateKeyLocal(Date.now());
+      const todayRecords = scopedRecords.filter((r) => dateKeyLocal(r.ts) === todayKey);
+      const todayProfit = todayRecords.reduce((acc, r) => acc + Math.max(0, netPnlFromRecord(r)), 0);
+      const todayLoss = todayRecords.reduce((acc, r) => acc + Math.min(0, netPnlFromRecord(r)), 0);
+      const todayNet = todayProfit + todayLoss;
+      const todayClosed = todayRecords.filter((r) => Number.isFinite(Number(netPnlFromRecord(r))));
+      const todayWins = todayClosed.filter((r) => Number(netPnlFromRecord(r)) > 0).length;
+      const todayWinRate = todayClosed.length ? (todayWins / todayClosed.length) : 0;
+
+      $("tradeRecordCount").textContent = `${filteredRecords.length}/${scopedRecords.length} records | ${money(selectedPnl)}(含費)`;
+      const summaryEl = $("tradeDailySummary");
+      if (summaryEl) {
+        const topRows = dailyRows.slice(0, 7).map((d) => `
+          <div class="daily-pnl-row">
+            <span>${d.date}（${d.count}單）</span>
+            <strong class="${d.pnl >= 0 ? "green" : "red"}">${d.pnl >= 0 ? "+" : ""}${money(d.pnl)}</strong>
+          </div>
+        `).join("");
+        summaryEl.innerHTML = `
+          <div class="daily-pnl-row">
+            <span>當日營利</span>
+            <strong class="green">+${money(todayProfit)}</strong>
+          </div>
+          <div class="daily-pnl-row">
+            <span>當日虧損</span>
+            <strong class="red">${money(todayLoss)}</strong>
+          </div>
+          <div class="daily-pnl-row">
+            <span>當日淨利</span>
+            <strong class="${todayNet >= 0 ? "green" : "red"}">${todayNet >= 0 ? "+" : ""}${money(todayNet)}</strong>
+          </div>
+          <div class="daily-pnl-row">
+            <span>當日勝率</span>
+            <strong class="${todayWinRate >= 0.5 ? "green" : "amber"}">${pct(todayWinRate, 1)}（${todayWins}/${todayClosed.length}）</strong>
+          </div>
+          <div class="daily-pnl-row">
+            <span>${selectedDate ? `${selectedDate} 每日總盈虧(含費)` : "全部區間總盈虧(含費)"}</span>
+            <strong class="${selectedPnl >= 0 ? "green" : "red"}">${selectedPnl >= 0 ? "+" : ""}${money(selectedPnl)}</strong>
+          </div>
+          ${topRows || `<div class="daily-pnl-row"><span>尚無每日資料</span><strong>-</strong></div>`}
+        `;
+      }
+      if (!filteredRecords.length) {
+        $("tradeRecords").innerHTML = `<div class="empty">目前尚無交易紀錄</div>`;
         return;
       }
-      $("tradeRecords").innerHTML = state.tradeRecords.slice(0, 16).map((r) => {
-        const sideClass = r.side === "buy" ? "green" : "red";
+      $("tradeRecords").innerHTML = filteredRecords.slice(0, 60).map((r) => {
+        const sideClass = r.side === "buy" ? "green" : r.side === "sell" ? "red" : "amber";
         const when = new Date(r.ts).toLocaleString();
         const meta = Object.values(SYMBOLS).find((item) => item.okxInst === r.instId || item.pair === r.pair) || symbolMeta();
+        const pnlVal = Number(r.pnl);
+        const pnlText = finite(pnlVal) ? money(pnlVal) : "-";
+        const feeVal = estimatedFeeFromRecord(r);
+        const netVal = netPnlFromRecord(r);
         return `
           <div class="record-card">
             <div class="record-top">
@@ -1376,17 +2488,22 @@
               <span class="${sideClass}">${String(r.side || "").toUpperCase()} ${r.status || r.source || ""}</span>
             </div>
             <div class="record-grid">
-              <span>${when}</span>
-              <span>本金 ${money(r.principal)}</span>
-              <span>${r.env || "-"}</span>
-            </div>
-            <div class="record-grid">
-              <span>數量 ${fmt(r.qty, meta.qtyDp)}</span>
-              <span>${r.ordType || r.type || "market"}</span>
-              <span>${r.orderId ? `ID ${r.orderId}` : r.message || ""}</span>
-            </div>
+            <span>${when}</span>
+            <span>本金 ${money(r.principal)}</span>
+            <span>${r.env || "-"}</span>
           </div>
-        `;
+          <div class="record-grid">
+            <span>數量 ${fmt(r.qty, meta.qtyDp)}</span>
+            <span>${r.ordType || r.type || "market"}</span>
+            <span>${r.orderId ? `ID ${r.orderId}` : r.message || ""}</span>
+          </div>
+          <div class="record-grid">
+            <span>毛PnL ${finite(pnlVal) ? (pnlVal >= 0 ? "+" : "") + pnlText : pnlText}</span>
+            <span>Fee -${money(feeVal)}</span>
+            <span class="${netVal >= 0 ? "green" : "red"} pnl-strong">淨PnL ${netVal >= 0 ? "+" : ""}${money(netVal)}</span>
+          </div>
+        </div>
+      `;
       }).join("");
     }
 
@@ -1410,25 +2527,36 @@
       $("okxPositions").innerHTML = rows.map((p) => {
         const pnl = num(p.upl);
         const side = String(p.posSide || p.pos || "").toLowerCase();
-        const sideClass = side.includes("short") || num(p.pos) < 0 ? "red" : "green";
+        const isShort = side.includes("short") || num(p.pos) < 0;
+        const sideClass = isShort ? "side-short" : "side-long";
+        const rawLev = num(p.lever ?? p.leverage ?? p.lev);
+        const fallbackLev = num($("maxLev")?.value);
+        const displayLev = finite(rawLev) && rawLev > 0 ? rawLev : fallbackLev;
+        const levText = finite(displayLev) && displayLev > 0
+          ? `${fmt(displayLev, Number.isInteger(Number(displayLev)) ? 0 : 2)}x `
+          : "";
+        const sideText = `${levText}${isShort ? "做空" : "做多"}`;
         return `
           <div class="record-card">
             <div class="record-top">
               <strong>${p.instId}</strong>
-              <span class="${sideClass}">${p.posSide || p.pos}</span>
+              <span class="side-pill ${sideClass}">${sideText}</span>
             </div>
             <div class="record-grid">
               <span>張數 ${fmt(p.pos, 4)}</span>
               <span>均價 ${fmt(p.avgPx, 4)}</span>
-              <span class="${pnl >= 0 ? "green" : "red"}">PnL ${money(pnl)}</span>
+              <span class="${pnl >= 0 ? "green" : "red"} position-pnl">PnL ${money(pnl)}</span>
             </div>
             <div class="button-grid">
-              <button type="button" data-close-position="${encodeURIComponent(JSON.stringify({
-                instId: p.instId,
-                mgnMode: p.mgnMode || "cross",
-                posSide: p.posSide || "",
-                autoCxl: true,
-              }))}">一鍵平倉</button>
+            <button type="button" data-close-position="${encodeURIComponent(JSON.stringify({
+              instId: p.instId,
+              mgnMode: p.mgnMode || "cross",
+              posSide: p.posSide || "",
+              autoCxl: true,
+              qty: num(p.pos),
+              avgPx: num(p.avgPx),
+              estPnl: num(p.upl),
+            }))}">一鍵平倉</button>
             </div>
           </div>
         `;
@@ -1511,8 +2639,9 @@
       renderTop(data, signal, style, lev, block);
       renderTicket(data, signal, style, lev, block);
       renderRisk(data, signal, style);
+      renderNightlyBanner();
+      renderBullBearReasons(data, signal);
       drawCharts(data, signal);
-      renderOrders();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -1537,7 +2666,7 @@
           savedPrefs = { ...savedPrefs, ...payload.prefs };
         }
         if (Array.isArray(payload.equitySnapshots)) {
-          state.equitySnapshots = payload.equitySnapshots;
+          state.equitySnapshots = normalizeEquitySnapshots(payload.equitySnapshots);
           localStorage.setItem(EQUITY_KEY, JSON.stringify(state.equitySnapshots));
         }
         if (Array.isArray(payload.tradeRecords)) {
@@ -1567,6 +2696,11 @@
         slPct: $("slPct").value,
         tpPct: $("tpPct").value,
         aiAutoEnabled: state.aiAutoEnabled,
+        crashGuardUntilMs: Number(state.crashGuardUntilMs) || 0,
+        crashGuardReason: String(state.crashGuardReason || ""),
+        v10BaselineTs: Number(state.v10BaselineTs) || Date.now(),
+        klineIntervalSec: Number(state.klineIntervalSec) || 60,
+        tradeRecordDate: String($("tradeDateFilter")?.value || ""),
       };
       localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
       localStorage.setItem("tradeRiskProfile", state.risk);
@@ -1579,6 +2713,11 @@
       state.orderType = savedPrefs.orderType || state.orderType;
       state.risk = savedPrefs.risk || state.risk;
       state.aiAutoEnabled = savedPrefs.aiAutoEnabled === true;
+      state.crashGuardUntilMs = Number(savedPrefs.crashGuardUntilMs) || 0;
+      state.crashGuardReason = String(savedPrefs.crashGuardReason || "");
+      state.v10BaselineTs = Number(savedPrefs.v10BaselineTs) || Date.now();
+      state.klineIntervalSec = Number(savedPrefs.klineIntervalSec) || 3600;
+      state.tradeRecordDate = String(savedPrefs.tradeRecordDate || "");
       const fieldDefaults = {
         principal: SYMBOLS[state.symbol].defaultPrincipal,
         aiCapital: SYMBOLS[state.symbol].defaultPrincipal,
@@ -1591,10 +2730,12 @@
       Object.entries(fieldDefaults).forEach(([id, fallback]) => {
         $(id).value = savedPrefs[id] ?? fallback;
       });
+      if ($("tradeDateFilter")) $("tradeDateFilter").value = state.tradeRecordDate;
       setSymbol(state.symbol, { keepAmounts: true });
       setSide(state.side);
       document.querySelectorAll("[data-risk]").forEach((b) => b.classList.toggle("active", b.dataset.risk === state.risk));
       document.querySelectorAll("[data-order-type]").forEach((b) => b.classList.toggle("active", b.dataset.orderType === state.orderType));
+      updateChartControls();
       updateAiAutoButton();
     }
 
@@ -1603,9 +2744,19 @@
       const signal = computeSignal(data);
       const style = classifyStyle(data, signal);
       const block = riskBlock(data, signal);
-      if (auto && (block !== "none" || signal.signal === "觀望")) {
-        $("safetyNote").textContent = `Auto paper skipped: ${block === "none" ? "沒有方向訊號" : block}.`;
-        return;
+      const rb = currentRuleBrain();
+      let autoSide = null;
+      if (auto) {
+        if (rb) {
+          autoSide = sideFromRuleBrain(rb);
+          if (!autoSide) {
+            $("safetyNote").textContent = `Auto paper skipped: 規則小腦 HOLD（${rb.blocks?.[0] || "guard"}）。`;
+            return;
+          }
+        } else if (block !== "none" || signal.signal === "觀望") {
+          $("safetyNote").textContent = `Auto paper skipped: ${block === "none" ? "沒有方向訊號" : block}.`;
+          return;
+        }
       }
       const entry = getEntry();
       const principal = getEffectivePrincipal({ aiCapped: auto });
@@ -1617,7 +2768,7 @@
       const lev = suggestedLeverage(data, signal, style);
       const slPct = Math.max(0, num($("slPct").value) || 0) / 100;
       const tpPct = Math.max(0, num($("tpPct").value) || 0) / 100;
-      const side = auto ? (signal.signal === "看跌" ? "sell" : "buy") : state.side;
+      const side = auto ? (autoSide || (signal.signal === "看跌" ? "sell" : "buy")) : state.side;
       const order = {
         id: crypto.randomUUID(),
         ts: Date.now(),
@@ -1632,8 +2783,8 @@
         stop: side === "buy" ? entry * (1 - slPct) : entry * (1 + slPct),
         take: side === "buy" ? entry * (1 + tpPct) : entry * (1 - tpPct),
         status: "open",
-        signal: signal.signal,
-        confidence: signal.confidence,
+        signal: rb?.allowed ? `規則小腦 ${rb.direction}` : signal.signal,
+        confidence: rb?.allowed ? rb.confidence : signal.confidence,
       };
       state.orders.unshift(order);
       saveOrders();
@@ -1645,19 +2796,21 @@
         type: order.type,
         qty: order.qty,
         principal: order.principal,
+        pnl: 0,
         message: order.signal,
       });
       render();
       $("safetyNote").textContent = auto ? `已依目前 AI 訊號建立紙上單，本金 ${money(principal)}。` : "已建立本機紙上單。";
     }
 
-    function buildOkxOrder({ aiCapped = false, sideOverride = null } = {}) {
+    function buildOkxOrder({ aiCapped = false, sideOverride = null, leverage = null } = {}) {
       const meta = symbolMeta();
       const entry = getEntry();
       const principal = getEffectivePrincipal({ aiCapped });
       const contracts = getOkxContractSize(entry, principal);
       const estimatedNotional = getOkxNotionalFromContracts(contracts, entry);
       const side = sideOverride || state.side;
+      const actualLeverage = capLeverage(leverage, 1);
       const payload = {
         instId: meta.okxInst,
         tdMode: "cross",
@@ -1668,6 +2821,7 @@
         clOrdId: `ait${Date.now()}`.slice(0, 32),
         principal,
         estimatedNotional,
+        leverage: actualLeverage,
       };
       if (state.orderType !== "market") payload.px = String(entry);
       return payload;
@@ -1698,14 +2852,30 @@
     async function submitOkxLive(options = {}) {
       try {
         const ai = Boolean(options.ai);
+        const forcedSide = options.sideOverride || null;
         const dataNow = currentData();
         const signal = computeSignal(dataNow);
+        const style = classifyStyle(dataNow, signal);
         const block = riskBlock(dataNow, signal);
-        let sideOverride = null;
+        const crashGuard = checkCrashGuard(dataNow, signal, { activate: ai });
+        if (ai && crashGuard.blocked) throw new Error(crashGuard.reason);
+        const rb = currentRuleBrain();
+        const v7 = currentV7Decision();
+        let sideOverride = forcedSide;
         if (ai) {
-          if (signal.signal === "觀望") throw new Error("AI 目前是觀望，不送模擬盤。");
-          if (block !== "none") throw new Error(`AI 模擬盤送單被風控阻擋：${block}`);
-          sideOverride = signal.signal === "看跌" ? "sell" : "buy";
+          if (sideOverride) {
+            // keep caller override
+          } else if (v7?.ok) {
+            sideOverride = sideFromV7Decision(v7);
+            if (!sideOverride) throw new Error(`AI 模型 HOLD，不送模擬盤（conf ${pct(v7.confidence || 0, 0)}）。`);
+          } else if (rb) {
+            sideOverride = sideFromRuleBrain(rb);
+            if (!sideOverride) throw new Error(`規則小腦 HOLD，不送模擬盤：${rb.blocks?.[0] || "guard"}`);
+          } else {
+            if (signal.signal === "觀望") throw new Error("AI 目前是觀望，不送模擬盤。");
+            if (block !== "none") throw new Error(`AI 模擬盤送單被風控阻擋：${block}`);
+            sideOverride = signal.signal === "看跌" ? "sell" : "buy";
+          }
         }
         await loadOkxStatus();
         await loadAccount();
@@ -1716,12 +2886,36 @@
         if (!state.okx?.demo && !state.okx?.real_env_trading_allowed) {
           throw new Error("目前 OKX_DEMO=0，而且正式環境送單保險絲未開。");
         }
-        const order = buildOkxOrder({ aiCapped: true, sideOverride });
+        const levForGate = Math.max(1, Math.round(resolveExecutionLeverage({ ai, signal, style })));
+        const order = buildOkxOrder({ aiCapped: true, sideOverride, leverage: levForGate });
         if (!finite(order.sz) || Number(order.sz) <= 0) throw new Error("invalid size");
+        const lockedAi = ai ? {
+          direction: order.side === "buy" ? "long" : (order.side === "sell" ? "short" : "flat"),
+          confidence: Number(v7?.confidence || signal?.confidence || 0),
+          allowed: true,
+        } : null;
+        const precheck = await runStrategyPrecheck({
+          side: order.side,
+          leverage: levForGate,
+          aiOrder: ai,
+          lockedAi,
+        });
+        state.strategy[state.symbol] = precheck;
+        if (!precheck.allowed) {
+          throw new Error(`策略門控阻擋：${(precheck.reasons || [])[0] || "gate blocked"}`);
+        }
         const res = await fetch("/api/okx/order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order, confirm: "OKX LIVE" }),
+          body: JSON.stringify({
+            order,
+            confirm: "OKX LIVE",
+            enforce_strategy_gate: true,
+            ai_order: false,
+            leverage: levForGate,
+            interval_sec: Math.max(60, Number(state.klineIntervalSec) || 3600),
+            model_mode: "v10",
+          }),
         });
         const data = await res.json();
         const resultRow = okxResultRow(data.result);
@@ -1731,7 +2925,7 @@
             ? `OKX 錯誤：${data.error}`
             : data.dry_run
               ? `仍是 dry-run：${data.message || "尚未真的送出"}`
-              : `已送到 OKX ${state.okx?.demo ? "模擬盤" : "目前連線環境"}：${order.instId} ${order.side}/${order.posSide} ${order.sz} 張，ID ${okxShortId(resultRow, order.clOrdId)}`;
+              : `已送到 OKX ${state.okx?.demo ? "模擬盤" : "目前連線環境"}：${order.instId} ${order.side}/${order.posSide} ${order.sz} 張，${levForGate}x，ID ${okxShortId(resultRow, order.clOrdId)}`;
         if (!data.error && !data.blocked && !data.dry_run) {
           addTradeRecord({
             source: ai ? "AI OKX" : "OKX",
@@ -1742,8 +2936,15 @@
             ordType: order.ordType,
             qty: Number(order.sz),
             principal: order.principal,
+            estimatedNotional: order.estimatedNotional,
             orderId: resultRow.ordId || resultRow.clOrdId || order.clOrdId,
-            message: ai ? `${signal.signal} ${Math.round(signal.confidence * 100)}%` : (data.result?.msg || ""),
+            message: ai && rb?.allowed
+              ? `規則小腦 ${rb.direction} ${Math.round(rb.confidence * 100)}%`
+              : ai && v7?.ok
+                ? `${String(v7.model_name || "AI").toUpperCase()} ${String(v7.direction || "").toUpperCase()} ${Math.round((v7.confidence || 0) * 100)}%`
+                : ai
+                  ? `${signal.signal} ${Math.round(signal.confidence * 100)}%`
+                  : (data.result?.msg || ""),
           });
         }
         $("okxLast").textContent = resultText.slice(0, 110);
@@ -1810,8 +3011,11 @@
           status: data.error || data.blocked ? "blocked" : "sent",
           instId: position.instId,
           side: "close",
+          ordType: "market",
           principal: 0,
-          qty: 0,
+          qty: finite(position.qty) ? Number(position.qty) : 0,
+          avgPx: finite(position.avgPx) ? Number(position.avgPx) : NaN,
+          pnl: finite(position.estPnl) ? Number(position.estPnl) : NaN,
           orderId: data.result?.data?.[0]?.ordId || "",
           message: data.error || data.message || "",
         });
@@ -1838,7 +3042,7 @@
       savePrefs();
       updateAiAutoButton();
       $("safetyNote").textContent = state.aiAutoEnabled
-        ? "AI 連續送單已開啟：每 15 秒檢查一次。同方向會加碼；反向訊號會先平倉，下一輪才開反向倉。"
+        ? "AI 連續送單已開啟。"
         : "AI 連續送單已關閉。";
     }
 
@@ -1850,18 +3054,46 @@
         const dataNow = currentData();
         const signal = computeSignal(dataNow);
         const block = riskBlock(dataNow, signal);
-        if (signal.signal === "觀望") {
-          $("safetyNote").textContent = "AI 連續送單：目前觀望，不動作。";
+        const crashGuard = checkCrashGuard(dataNow, signal, { activate: true });
+        if (crashGuard.blocked) {
+          $("safetyNote").textContent = `AI 連續送單：${crashGuard.reason}，暫停送單。`;
           return;
         }
-        if (block !== "none") {
-          $("safetyNote").textContent = `AI 連續送單：風控阻擋 ${block}，不動作。`;
-          return;
+        const rb = currentRuleBrain();
+        const v7 = currentV7Decision();
+
+        let desiredSide = null;
+        let decisionSource = "signal";
+
+        if (v7?.ok) {
+          desiredSide = sideFromV7Decision(v7);
+          decisionSource = String(v7.model_name || "ai").toLowerCase();
+          if (!desiredSide) {
+            $("safetyNote").textContent = `AI 連續送單：模型 HOLD（conf ${pct(v7.confidence || 0, 0)}），不動作。`;
+            return;
+          }
+        } else if (rb) {
+          desiredSide = sideFromRuleBrain(rb);
+          decisionSource = "rule";
+          if (!desiredSide) {
+            $("safetyNote").textContent = `AI 連續送單：規則小腦 HOLD（${rb.blocks?.[0] || "guard"}），不動作。`;
+            return;
+          }
+        } else {
+          if (signal.signal === "觀望") {
+            $("safetyNote").textContent = "AI 連續送單：目前觀望，不動作。";
+            return;
+          }
+          if (block !== "none") {
+            $("safetyNote").textContent = `AI 連續送單：風控阻擋 ${block}，不動作。`;
+            return;
+          }
+          desiredSide = signal.signal === "看跌" ? "sell" : "buy";
+          decisionSource = "signal";
         }
 
         await loadOkxStatus();
         await loadAccount();
-        const desiredSide = signal.signal === "看跌" ? "sell" : "buy";
         const desiredPosSide = okxPosSide(desiredSide);
         const meta = symbolMeta();
         const positions = activePositionsForInst(meta.okxInst);
@@ -1879,11 +3111,11 @@
             autoCxl: true,
           });
           if (result?.error || result?.blocked) return;
-          $("safetyNote").textContent = `AI 連續送單：偵測到反向 ${opposite.posSide} 倉位，已先送平倉；下一輪若訊號仍成立才開 ${desiredPosSide}。`;
+          $("safetyNote").textContent = `AI 連續送單(${decisionSource})：偵測到反向 ${opposite.posSide} 倉位，已先送平倉；下一輪若訊號仍成立才開 ${desiredPosSide}。`;
           return;
         }
 
-        await submitOkxLive({ ai: true });
+        await submitOkxLive({ ai: true, sideOverride: desiredSide });
       } finally {
         state.aiAutoBusy = false;
       }
@@ -1906,27 +3138,40 @@
         savePrefs();
         render();
       }));
+      document.querySelectorAll("[data-kline-sec]").forEach((btn) => btn.addEventListener("click", async () => {
+        const nextSec = Number(btn.dataset.klineSec) || 60;
+        state.klineIntervalSec = nextSec;
+        updateChartControls();
+        refreshTradingViewFrame();
+        savePrefs();
+        await Promise.all([loadIndicators("BTC"), loadIndicators("ADA")]);
+        render();
+      }));
       ["principal", "aiCapital", "maxLev", "limitPrice", "reserve", "slPct", "tpPct"].forEach((id) => $(id).addEventListener("input", () => {
         savePrefs();
         render();
       }));
-      $("paperSubmit").addEventListener("click", () => submitPaper(false));
-      $("autoPaper").addEventListener("click", () => submitPaper(true));
-      $("okxDryRun").addEventListener("click", submitOkxDryRun);
+      $("tradeDateFilter").addEventListener("change", () => {
+        state.tradeRecordDate = String($("tradeDateFilter").value || "");
+        savePrefs();
+        renderTradeRecords();
+      });
+      $("tradeDateClear").addEventListener("click", () => {
+        $("tradeDateFilter").value = "";
+        state.tradeRecordDate = "";
+        savePrefs();
+        renderTradeRecords();
+      });
       $("okxLive").addEventListener("click", submitOkxLive);
       $("aiOkxLive").addEventListener("click", () => submitOkxLive({ ai: true }));
       $("aiOkxAuto").addEventListener("click", () => setAiAutoEnabled(!state.aiAutoEnabled));
-      $("clearOrders").addEventListener("click", () => {
-        state.orders = [];
-        saveOrders();
-        render();
-      });
     }
 
     function setSymbol(symbol, options = {}) {
       state.symbol = symbol;
       $("symbolBTC").classList.toggle("active", symbol === "BTC");
       $("symbolADA").classList.toggle("active", symbol === "ADA");
+      refreshTradingViewFrame();
       if (!options.keepAmounts) {
         $("principal").value = SYMBOLS[symbol].defaultPrincipal;
         $("aiCapital").value = SYMBOLS[symbol].defaultPrincipal;
@@ -1947,6 +3192,13 @@
       await Promise.all([
         loadSignal("BTC"),
         loadSignal("ADA"),
+        loadRuleBrain("BTC"),
+        loadRuleBrain("ADA"),
+        loadV7Decision("BTC"),
+        loadV7Decision("ADA"),
+        loadStrategyParams("BTC"),
+        loadStrategyParams("ADA"),
+        loadNightlyStatus(),
         loadIndicators("BTC"),
         loadIndicators("ADA"),
       ]);
@@ -1957,12 +3209,13 @@
       await loadServerTradingState();
       bind();
       restorePrefs();
-      renderOrders();
       renderTradeRecords();
+      renderKeywordNews();
       renderEquityChart();
       tick();
       loadOkxStatus();
       loadAccount();
+      loadKeywordNews();
       loadPendingOrders();
     }
 
@@ -1970,9 +3223,9 @@
     setInterval(tick, 1200);
     setInterval(loadOkxStatus, 5000);
     setInterval(loadAccount, 30000);
+    setInterval(loadKeywordNews, 120000);
     setInterval(loadPendingOrders, 5000);
     setInterval(aiAutoTradeTick, 15000);
-    setInterval(renderOrders, 1000);
     if (window.lucide) lucide.createIcons();
   </script>
 </body>

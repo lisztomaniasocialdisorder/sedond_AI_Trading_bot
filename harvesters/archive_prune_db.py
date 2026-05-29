@@ -198,6 +198,7 @@ def rebuild_period_rollups(symbol_root: Path, table: str, *, compression: str) -
             tmp_file.unlink()
 
         writer: pq.ParquetWriter | None = None
+        writer_schema = None
         total_rows = 0
         try:
             for daily in files:
@@ -205,7 +206,10 @@ def rebuild_period_rollups(symbol_root: Path, table: str, *, compression: str) -
                 for batch in pf.iter_batches(batch_size=250_000):
                     arrow_table = pa.Table.from_batches([batch])
                     if writer is None:
-                        writer = pq.ParquetWriter(tmp_file, arrow_table.schema, compression=compression)
+                        writer_schema = arrow_table.schema
+                        writer = pq.ParquetWriter(tmp_file, writer_schema, compression=compression)
+                    elif arrow_table.schema != writer_schema:
+                        arrow_table = arrow_table.cast(writer_schema, safe=False)
                     writer.write_table(arrow_table)
                     total_rows += arrow_table.num_rows
         finally:

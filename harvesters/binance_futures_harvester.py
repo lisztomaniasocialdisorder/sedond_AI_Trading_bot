@@ -17,7 +17,8 @@ Streams collected (per symbol)
 Storage
 ───────
   SQLite  (WAL mode)        : <COIN>_harvester/raw_db/microstructure_<COIN>.db
-  Parquet (buffered flush)  : data/parquet/<COIN>/<table>/date=YYYY-MM-DD/
+  Live Parquet spool        : data/parquet_spool/<COIN>/<table>/date=YYYY-MM-DD/
+                              enabled by default; set HARVESTER_WRITE_PARQUET=0 to disable
 
 Stability
 ─────────
@@ -39,6 +40,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import signal
 import sqlite3
 import sys
@@ -58,6 +60,8 @@ try:
     _HAS_PARQUET = True
 except ImportError:
     _HAS_PARQUET = False
+
+_WRITE_PARQUET = os.getenv("HARVESTER_WRITE_PARQUET", "1").strip().lower() not in {"0", "false", "no", "off"}
 
 try:
     from prometheus_client import Counter, Gauge, start_http_server
@@ -652,9 +656,12 @@ class BinanceFuturesHarvester:
         harvester_dir     = self.project_root / "harvesters" / f"{self.coin}_harvester"
         self.db_path      = harvester_dir / "raw_db" / f"microstructure_{self.coin}.db"
         self.log_dir      = harvester_dir / "logs"
-        self.parquet_root = self.project_root / "data" / "parquet" / self.coin
+        self.parquet_root = self.project_root / "data" / "parquet_spool" / self.coin
 
-        for p in (self.db_path.parent, self.log_dir, self.parquet_root):
+        dirs = [self.db_path.parent, self.log_dir]
+        if _HAS_PARQUET and _WRITE_PARQUET:
+            dirs.append(self.parquet_root)
+        for p in dirs:
             p.mkdir(parents=True, exist_ok=True)
 
         # ── logging ──────────────────────────────────────────────────────────
@@ -664,6 +671,7 @@ class BinanceFuturesHarvester:
         self.log.info(f"DB      : {self.db_path}")
         self.log.info(f"Parquet : {self.parquet_root}")
         self.log.info(f"Parquet available: {_HAS_PARQUET}")
+        self.log.info(f"Parquet live write enabled: {_HAS_PARQUET and _WRITE_PARQUET}")
         self.log.info(f"Prometheus available: {_HAS_PROMETHEUS}")
         self.log.info("=" * 70)
 
@@ -674,7 +682,7 @@ class BinanceFuturesHarvester:
         self._init_db()
 
         # ── parquet ──────────────────────────────────────────────────────────
-        self._pq_schemas: Dict = _build_parquet_schemas() if _HAS_PARQUET else {}
+        self._pq_schemas: Dict = _build_parquet_schemas() if (_HAS_PARQUET and _WRITE_PARQUET) else {}
         self._pq_buf: Dict[str, List[dict]] = {t: [] for t in self._pq_schemas}
         self._pq_last_flush = time.time()
 
@@ -683,6 +691,7 @@ class BinanceFuturesHarvester:
         self._should_stop = False
         self._shutdown_started = False
         self._msg_count   = 0
+        self._total_msg_count = 0
         self._l1_cur_sec: Optional[int] = None
         self._l1_buf: List[tuple] = []
 
@@ -942,7 +951,7 @@ class BinanceFuturesHarvester:
             "VALUES (?,?,?,?,?,?,?,?,?)",
             row,
         )
-        if _HAS_PARQUET:
+        if self._pq_schemas:
             self._pq_buf["trades"].append({
                 "local_ts": local_ts, "event_ts": row[1], "trade_ts": row[2],
                 "symbol": row[3], "trade_id": row[4],
@@ -981,7 +990,7 @@ class BinanceFuturesHarvester:
             "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             row,
         )
-        if _HAS_PARQUET:
+        if self._pq_schemas:
             self._pq_buf["agg_trades"].append({
                 "local_ts": local_ts, "event_ts": row[1], "trade_ts": row[2],
                 "symbol": row[3], "agg_trade_id": row[4],
@@ -1062,6 +1071,22 @@ class BinanceFuturesHarvester:
             if total > 0:
                 obi = (bid_qty - ask_qty) / total
 
+        if self._pq_schemas:
+            self._pq_buf["orderbook_l1"].append({
+                "local_ts": local_ts,
+                "event_ts": event_ts,
+                "update_id": self._i(data.get("u")),
+                "symbol": data.get("s", self.symbol),
+                "bid_price": bid_price,
+                "bid_qty": bid_qty,
+                "ask_price": ask_price,
+                "ask_qty": ask_qty,
+                "spread": ask_price - bid_price if bid_price is not None and ask_price is not None else None,
+                "spread_bps": spread_bps,
+                "mid_price": mid_price,
+                "obi": obi,
+            })
+
         # ── accumulate into buffer ────────────────────────────────────
         if mid_price is None:
             return
@@ -1136,7 +1161,7 @@ class BinanceFuturesHarvester:
                 f"VALUES (?,?,?,?,?,?,?,?,?)",
                 rows,
             )
-            if _HAS_PARQUET:
+            if self._pq_schemas:
                 keys = ("local_ts","event_ts","update_id","symbol","level",
                         "bid_price","bid_qty","ask_price","ask_qty")
                 self._pq_buf[table].extend(dict(zip(keys, r)) for r in rows)
@@ -1159,7 +1184,7 @@ class BinanceFuturesHarvester:
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 metric_row,
             )
-            if _HAS_PARQUET:
+            if self._pq_schemas:
                 keys = ("local_ts","event_ts","update_id","symbol","depth_type",
                         "total_bid_qty","total_ask_qty","total_bid_value","total_ask_value",
                         "depth_imbalance","bid_vwap","ask_vwap","weighted_mid")
@@ -1190,7 +1215,7 @@ class BinanceFuturesHarvester:
             "VALUES (?,?,?,?,?,?,?,?)",
             row,
         )
-        if _HAS_PARQUET:
+        if self._pq_schemas:
             keys = ("local_ts","event_ts","symbol","mark_price","index_price",
                     "est_settle_price","last_funding_rate","next_funding_time")
             self._pq_buf["mark_price"].append(dict(zip(keys, row)))
@@ -1235,7 +1260,7 @@ class BinanceFuturesHarvester:
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             row,
         )
-        if _HAS_PARQUET:
+        if self._pq_schemas:
             keys = ("local_ts","event_ts","symbol","side","order_type","time_in_force",
                     "orig_qty","price","avg_price","order_status",
                     "last_filled_qty","filled_accum_qty","trade_time")
@@ -1280,7 +1305,8 @@ class BinanceFuturesHarvester:
 
             # Batch commit: commit every N messages for efficiency
             self._msg_count += 1
-            self._console.update(msg_count=self._msg_count)
+            self._total_msg_count += 1
+            self._console.update(msg_count=self._total_msg_count)
             if self._msg_count >= COMMIT_INTERVAL:
                 self.conn.commit()
                 self._msg_count = 0
@@ -1390,7 +1416,7 @@ class BinanceFuturesHarvester:
     # ══════════════════════════════════════════════════════════════════════════
 
     def _maybe_flush_parquet(self, now: float):
-        if not _HAS_PARQUET:
+        if not self._pq_schemas:
             return
         total_rows = sum(len(v) for v in self._pq_buf.values())
         elapsed    = now - self._pq_last_flush
@@ -1398,7 +1424,7 @@ class BinanceFuturesHarvester:
             self._flush_parquet()
 
     def _flush_parquet(self):
-        if not _HAS_PARQUET:
+        if not self._pq_schemas:
             return
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         ts_part  = int(time.time())
